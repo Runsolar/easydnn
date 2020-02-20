@@ -14,11 +14,8 @@ float Sigmoid(const T& x)
 template<typename T>
 class Vector {
 public:
-    /*
-        Vector(const Vector<T>& vecObj) {
+    const int len;
 
-        }
-    */
     Vector() = delete;
     Vector(const int len) : len(len) {
         try {
@@ -28,6 +25,15 @@ public:
         catch (std::exception & ex) {
             std::cout << "En exception is happened... " << ex.what() << std::endl;
             return;
+        }
+    }
+    
+
+    Vector(const Vector<T>& vec): Vector(vec.len) {
+        std::cout << "Coppy... this: " << this <<  std::endl;
+        if (this == &vec) return;
+        for (int i = 0; i < len; ++i) {
+            array[i] = vec.array[i];
         }
     }
 
@@ -51,8 +57,6 @@ public:
     T& operator[](const int index) {
         return array[index];
     }
-
-    const int len;
 
 private:
     
@@ -107,6 +111,7 @@ Vector<T> Vector<T>::operator*(Matrix<T>& matrix) {
     for (int i = 0; i < matrix.cols; i++) {
         vec[i] = *this * matrix[i];
     }
+
     return vec;
 }
 
@@ -136,7 +141,7 @@ Vector<T>& Vector<T>::operator-=(const Vector<T>& vector) {
 
 template<typename T>
 Vector<T>& Vector<T>::operator=(const Vector<T>& vector) {
-//    if (this == vector) return *this;
+    if (this == &vector) return *this;
     if (this->len == vector.len) {
         for (int i = 0; i < this->len; ++i) {
             array[i] = vector.array[i];
@@ -231,11 +236,6 @@ private:
 template<typename T>
 void Layer<T>::FeedForward(Vector<T>& input) {
     outputs = input * weights;
-/*    
-    for (int i = 0; i < input.len; ++i) {
-        std::cout << input[i] << std::endl;
-    }
-    */
 }
 
 template<typename T>
@@ -297,12 +297,7 @@ void NeuralNetwork<T>::pushLayer(T& layerObj) {
 template<typename T>
 void NeuralNetwork<T>::FeedForward(Vector<double>& input) {
     Domain<T>* current = head;
-/*
-    Vector<double> in(3);
-    in[0] = 1;
-    in[1] = 1;
-    in[2] = 1;
-*/
+
     Vector<double>* pInput;
     pInput = &input;
 
@@ -356,9 +351,9 @@ int main()
     NeuralNetwork.pushLayer(layer4);
 
     Vector<double> input(3);
-    input[0] = 1;
-    input[1] = 1;
-    input[2] = 1;
+    input[0] = 0;
+    input[1] = 0;
+    input[2] = 0;
 
     NeuralNetwork.FeedForward(input);
 

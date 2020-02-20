@@ -1,4 +1,8 @@
-//under construction, it doesn't work yet
+//Under construction, it doesn't work yet
+/*
+This code is devoted to my father Jesus Christ.
+Code by Danijar Volf and St. Spirit, Feb 20, 2020.
+*/
 
 #include <iostream>
 #include<ctime>
@@ -166,6 +170,8 @@ public:
     const int cols;
     const int rows;
 
+    Matrix() = delete;
+
     Matrix(const int rows, const int cols) : rows(rows), cols(cols) {
         matrix = new Vector<T> * [cols];
         for (int i = 0; i < cols; i++) {
@@ -239,7 +245,6 @@ private:
     const int cols;
     const int rows;
     Matrix<T> weights;
-
 };
 
 template<typename T>
@@ -326,8 +331,7 @@ void NeuralNetwork<T>::FeedForward(Vector<double>& input) {
 
 int main()
 {
-    //Default Inputs
-    const float inputs[8][3] = {
+    const double inputs[8][3] = {
       {0, 0, 0}, //0
       {0, 0, 1}, //1
       {0, 1, 0}, //1
@@ -338,8 +342,8 @@ int main()
       {1, 1, 1}  //1
     };
 
-    // values that we were expecting to get from the 4th/(output)layer of Neural-NeuralNetwork, in other words something like a feedback to the Neural-NeuralNetwork.
-    const float expectedOutput[8][1] = { {0}, {1}, {1}, {0}, {1}, {0}, {0}, {1} };
+
+ //   const double expectedOutput[8][1] = { {0}, {1}, {1}, {0}, {1}, {0}, {0}, {1} };
     /*
         Layer<double> layer1(120, 64);
         Layer<double> layer2(64, 32);

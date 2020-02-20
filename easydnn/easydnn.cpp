@@ -43,13 +43,16 @@ public:
 
     //Vector<T> operator+(const Vector<T>& vector);
     //T operator*(const Vector<T>& vector);
+
     T operator*(Vector<T>& vector);
-    Vector<T> operator*(const T& scalar);
     Vector<T> operator*(Matrix<T>& matrix);
 
-    Vector<T>& operator*=(const T& scalar);
-    Vector<T>& operator+=(const Vector<T>& vector);
-    Vector<T>& operator-=(const Vector<T>& vector);
+    //Vector<T> operator*(const T& scalar);
+    
+
+    //Vector<T>& operator*=(const T& scalar);
+    //Vector<T>& operator+=(const Vector<T>& vector);
+    //Vector<T>& operator-=(const Vector<T>& vector);
 
     Vector<T>& operator=(const Vector<T>& vector);
 
@@ -97,6 +100,16 @@ T Vector<T>::operator*(Vector<T>& vector) {
 }
 
 template<typename T>
+Vector<T> Vector<T>::operator*(Matrix<T>& matrix) {
+    Vector<T> vec(matrix.cols);
+    for (int i = 0; i < matrix.cols; i++) {
+        vec[i] = *this * matrix[i];
+    }
+    return vec;
+}
+
+/*
+template<typename T>
 Vector<T> Vector<T>::operator*(const T& scalar) {
     Vector<T> vec(this->len);
 
@@ -105,18 +118,10 @@ Vector<T> Vector<T>::operator*(const T& scalar) {
     }
     return vec;
 }
+*/
 
-template<typename T>
-Vector<T> Vector<T>::operator*(Matrix<T>& matrix) {
 
-    Vector<T> vec(matrix.cols);
-    for (int i = 0; i < matrix.cols; i++) {
-        vec[i] = *this * matrix[i];
-    }
-
-    return vec;
-}
-
+/*
 template<typename T>
 Vector<T>& Vector<T>::operator*=(const T& scalar) {
     for (int i = 0; i < this->len; ++i) {
@@ -124,7 +129,9 @@ Vector<T>& Vector<T>::operator*=(const T& scalar) {
     }
     return *this;
 }
+*/
 
+/*
 template<typename T>
 Vector<T>& Vector<T>::operator+=(const Vector<T>& vector) {
     if (this->len == vector->len) {
@@ -134,13 +141,14 @@ Vector<T>& Vector<T>::operator+=(const Vector<T>& vector) {
     }
     return *this;
 }
-
+*/
+/*
 template<typename T>
 Vector<T>& Vector<T>::operator-=(const Vector<T>& vector) {
     this += vector * (-1);
     return *this;
 }
-
+*/
 template<typename T>
 Vector<T>& Vector<T>::operator=(const Vector<T>& vector) {
     if (this == &vector) return *this;
@@ -231,8 +239,7 @@ private:
     const int cols;
     const int rows;
     Matrix<T> weights;
-    
-    
+
 };
 
 template<typename T>

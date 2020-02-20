@@ -23,7 +23,7 @@ public:
     Vector(const int len) : len(len) {
         try {
             array = new T[len]();
-            //std::cout << "A new vector hase been created... " << this << std::endl;
+            std::cout << "A new vector hase been created... " << this << std::endl;
         }
         catch (std::exception & ex) {
             std::cout << "En exception is happened... " << ex.what() << std::endl;
@@ -33,13 +33,14 @@ public:
 
     ~Vector() {
         delete[] array;
-        //std::cout << "A vector hase been deleted... " << this << std::endl;
+        std::cout << "A vector hase been deleted... " << this << std::endl;
     }
 
     Vector<T> operator+(const Vector<T>& vector);
     T operator*(const Vector<T>& vector);
+    T operator*(Vector<T>& vector);
     Vector<T> operator*(const T& scalar);
-    Vector<T> operator*(const Matrix<T>& matrix);
+    Vector<T> operator*(Matrix<T>& matrix);
 
     Vector<T>& operator*=(const T& scalar);
     Vector<T>& operator+=(const Vector<T>& vector);
@@ -51,8 +52,10 @@ public:
         return array[index];
     }
 
-private:
     const int len;
+
+private:
+    
     T* array;
 };
 
@@ -69,9 +72,20 @@ Vector<T> Vector<T>::operator+(const Vector<T>& vector) {
 template<typename T>
 T Vector<T>::operator*(const Vector<T>& vector) {
     T sum = 0;
-    if (this->len == vector->len) {
+    if (this->len == vector.len) {
         for (int i = 0; i < this->len; ++i) {
-            sum += this->array[i] * vector->array[i];
+            sum += this->array[i] * vector.array[i];
+        }
+    }
+    return sum;
+}
+
+template<typename T>
+T Vector<T>::operator*(Vector<T>& vector) {
+    T sum = 0;
+    if (this->len == vector.len) {
+        for (int i = 0; i < this->len; ++i) {
+            sum += this->array[i] * vector.array[i];
         }
     }
     return sum;
@@ -88,10 +102,10 @@ Vector<T> Vector<T>::operator*(const T& scalar) {
 }
 
 template<typename T>
-Vector<T> Vector<T>::operator*(const Matrix<T>& matrix) {
+Vector<T> Vector<T>::operator*(Matrix<T>& matrix) {
     Vector<T> vec(matrix.cols);
     for (int i = 0; i < matrix.cols; i++) {
-        vec[i] = this * matrix[i];
+        vec[i] = *this * matrix[i];
     }
     return vec;
 }
@@ -122,10 +136,10 @@ Vector<T>& Vector<T>::operator-=(const Vector<T>& vector) {
 
 template<typename T>
 Vector<T>& Vector<T>::operator=(const Vector<T>& vector) {
-    if (vector == this) return *this;
-    if (this->len == vector->len) {
+//    if (this == vector) return *this;
+    if (this->len == vector.len) {
         for (int i = 0; i < this->len; ++i) {
-            this[i] = vector[i];
+            array[i] = vector.array[i];
         }
     }
     return *this;
@@ -134,6 +148,9 @@ Vector<T>& Vector<T>::operator=(const Vector<T>& vector) {
 template<typename T>
 class Matrix {
 public:
+    const int cols;
+    const int rows;
+
     Matrix(const int rows, const int cols) : rows(rows), cols(cols) {
         matrix = new Vector<T> * [cols];
         for (int i = 0; i < cols; i++) {
@@ -156,8 +173,6 @@ public:
     }
 
 private:
-    const int cols;
-    const int rows;
     Vector<T>** matrix;
 };
 
@@ -192,20 +207,35 @@ public:
         std::cout << std::endl;
     }
 
-    void FeedForward(const Vector<T>&);
+    void PrintOutputs() {
+        for (int i = 0; i < outputs.len; i++) {
+            std::cout << outputs[i] << std::endl;
+        }
+    }
+
+    void FeedForward(Vector<T>&);
 
     ~Layer() {}
+
+    Vector<T> outputs;
+    T* bias;    // bias of this layer
+
 private:
     const int cols;
     const int rows;
     Matrix<T> weights;
-    Vector<T> outputs;
-    T* bias;    // bias of this layer
+    
+    
 };
 
 template<typename T>
-void Layer<T>::FeedForward(const Vector<T>& input) {
+void Layer<T>::FeedForward(Vector<T>& input) {
     outputs = input * weights;
+/*    
+    for (int i = 0; i < input.len; ++i) {
+        std::cout << input[i] << std::endl;
+    }
+    */
 }
 
 template<typename T>
@@ -216,17 +246,17 @@ public:
     }
     ~NeuralNetwork();
 
-    void pushLayer(const T& layerObj);
-    void FeedForward();
+    void pushLayer(T& layerObj);
+    void FeedForward(Vector<double>& input);
 
 private:
     template<typename T>
     class Domain {
     public:
-        const T& layer;
+        T& layer;
         Domain<T>* pNextDomain;
         Domain<T>* pPreviousDomain;
-        Domain(const T& layer = T(), Domain<T>* pNextDomain = nullptr, Domain<T>* pPreviousDomain = nullptr) :
+        Domain(T& layer = T(), Domain<T>* pNextDomain = nullptr, Domain<T>* pPreviousDomain = nullptr) :
             layer(layer),
             pNextDomain(pNextDomain),
             pPreviousDomain(pPreviousDomain) {}
@@ -248,7 +278,7 @@ NeuralNetwork<T>::~NeuralNetwork() {
 }
 
 template<typename T>
-void NeuralNetwork<T>::pushLayer(const T& layerObj) {
+void NeuralNetwork<T>::pushLayer(T& layerObj) {
     if (head == nullptr) {
         head = new Domain<T>(layerObj);
         std::cout << "A first Domain has been created..." << this << std::endl;
@@ -265,8 +295,28 @@ void NeuralNetwork<T>::pushLayer(const T& layerObj) {
 }
 
 template<typename T>
-void NeuralNetwork<T>::FeedForward() {
+void NeuralNetwork<T>::FeedForward(Vector<double>& input) {
+    Domain<T>* current = head;
+/*
+    Vector<double> in(3);
+    in[0] = 1;
+    in[1] = 1;
+    in[2] = 1;
+*/
+    Vector<double>* pInput;
+    pInput = &input;
 
+    while (current != nullptr) {
+        T* layer = &current->layer;
+        //layer->PrintLayer();
+
+        layer->FeedForward(*pInput);
+        layer->PrintOutputs();
+        
+        pInput = &layer->outputs;
+        std::cout << std::endl;
+        current = current->pNextDomain;
+    }
 }
 
 
@@ -295,20 +345,22 @@ int main()
     //srand(time(NULL));
 
     Layer<double> layer1(3, 3);
-    layer1.PrintLayer();
     Layer<double> layer2(3, 9);
-    layer2.PrintLayer();
     Layer<double> layer3(9, 9);
-    layer3.PrintLayer();
     Layer<double> layer4(9, 1);
-    layer4.PrintLayer();
-
 
     NeuralNetwork<Layer<double>> NeuralNetwork;
     NeuralNetwork.pushLayer(layer1);
     NeuralNetwork.pushLayer(layer2);
     NeuralNetwork.pushLayer(layer3);
     NeuralNetwork.pushLayer(layer4);
+
+    Vector<double> input(3);
+    input[0] = 1;
+    input[1] = 1;
+    input[2] = 1;
+
+    NeuralNetwork.FeedForward(input);
 
     //NeuralNetwork.pushLayer(layer0);
     //NeuralNetwork.pushLayer(Layer<double>(120, 64));

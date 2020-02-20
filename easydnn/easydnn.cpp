@@ -1,4 +1,4 @@
-//under construction, not work yet
+//under construction, it doesn't work yet
 
 #include <iostream>
 #include<ctime>

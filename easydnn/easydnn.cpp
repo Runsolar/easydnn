@@ -27,7 +27,6 @@ public:
             return;
         }
     }
-    
 
     Vector(const Vector<T>& vec): Vector(vec.len) {
         std::cout << "Coppy... this: " << this <<  std::endl;
@@ -109,10 +108,12 @@ Vector<T> Vector<T>::operator*(const T& scalar) {
 
 template<typename T>
 Vector<T> Vector<T>::operator*(Matrix<T>& matrix) {
+
     Vector<T> vec(matrix.cols);
     for (int i = 0; i < matrix.cols; i++) {
         vec[i] = *this * matrix[i];
     }
+
     return vec;
 }
 
@@ -242,7 +243,7 @@ void Layer<T>::FeedForward(Vector<T>& input) {
 template<typename T>
 class NeuralNetwork {
 public:
-    NeuralNetwork() : head(nullptr) {
+    NeuralNetwork() : head(nullptr), tail(nullptr) {
         std::cout << "The NeuralNetwork has been created" << this << std::endl;
     }
     ~NeuralNetwork();
@@ -257,12 +258,13 @@ private:
         T& layer;
         Domain<T>* pNextDomain;
         Domain<T>* pPreviousDomain;
-        Domain(T& layer = T(), Domain<T>* pNextDomain = nullptr, Domain<T>* pPreviousDomain = nullptr) :
+        Domain(T& layer = T(), Domain<T>* pPreviousDomain = nullptr, Domain<T>* pNextDomain = nullptr) :
             layer(layer),
             pNextDomain(pNextDomain),
             pPreviousDomain(pPreviousDomain) {}
     };
     Domain<T>* head;
+    Domain<T>* tail;
 };
 
 template<typename T>
@@ -290,7 +292,9 @@ void NeuralNetwork<T>::pushLayer(T& layerObj) {
     while (current->pNextDomain != nullptr) {
         current = current->pNextDomain;
     }
-    current->pNextDomain = new Domain<T>(layerObj);
+    current->pNextDomain = new Domain<T>(layerObj, current);
+    tail = current->pNextDomain;
+
     std::cout << "A Domain has been created..." << this << std::endl;
     return;
 }
@@ -298,20 +302,17 @@ void NeuralNetwork<T>::pushLayer(T& layerObj) {
 template<typename T>
 void NeuralNetwork<T>::FeedForward(Vector<double>& input) {
     Domain<T>* current = head;
-
     Vector<double>* pInput;
+
     pInput = &input;
 
     while (current != nullptr) {
         T* layer = &current->layer;
-        //layer->PrintLayer();
-
         layer->FeedForward(*pInput);
-        layer->PrintOutputs();
-        
         pInput = &layer->outputs;
-        std::cout << std::endl;
         current = current->pNextDomain;
+        //layer->PrintOutputs(); 
+        //std::cout << std::endl;
     }
 }
 

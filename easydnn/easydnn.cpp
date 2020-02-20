@@ -42,8 +42,8 @@ public:
         std::cout << "A vector hase been deleted... " << this << std::endl;
     }
 
-    Vector<T> operator+(const Vector<T>& vector);
-    T operator*(const Vector<T>& vector);
+    //Vector<T> operator+(const Vector<T>& vector);
+    //T operator*(const Vector<T>& vector);
     T operator*(Vector<T>& vector);
     Vector<T> operator*(const T& scalar);
     Vector<T> operator*(Matrix<T>& matrix);
@@ -63,6 +63,7 @@ private:
     T* array;
 };
 
+/*
 template<typename T>
 Vector<T> Vector<T>::operator+(const Vector<T>& vector) {
     if (this->len == vector->len) {
@@ -83,6 +84,7 @@ T Vector<T>::operator*(const Vector<T>& vector) {
     }
     return sum;
 }
+*/
 
 template<typename T>
 T Vector<T>::operator*(Vector<T>& vector) {
@@ -111,7 +113,6 @@ Vector<T> Vector<T>::operator*(Matrix<T>& matrix) {
     for (int i = 0; i < matrix.cols; i++) {
         vec[i] = *this * matrix[i];
     }
-
     return vec;
 }
 

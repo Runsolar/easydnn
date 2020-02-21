@@ -164,6 +164,7 @@ Vector<T>& Vector<T>::operator=(const Vector<T>& vector) {
     }
     else {
         this->len = vector.len;
+        
         delete[] array;
         array = new T[this->len]();
         for (int i = 0; i < this->len; ++i) {
@@ -211,6 +212,8 @@ template<typename T>
 class Layer {
 
 public:
+    using element_type = typename std::remove_reference< decltype(std::declval<T>) >::type;
+
     Vector<T> outputs;
     T* bias;    // bias of this layer
 
@@ -263,21 +266,23 @@ void Layer<T>::FeedForward(Vector<T>& input) {
     outputs = input * weights;
 }
 
-template<class U>
+template<class U, typename T>
 class NeuralNetwork {
 public:
+    using element_type = typename std::remove_reference< decltype(std::declval<U>()) >::type;
+
     NeuralNetwork() : head(nullptr), tail(nullptr) {
         std::cout << "The NeuralNetwork has been created" << this << std::endl;
     }
     ~NeuralNetwork();
 
     void pushLayer(U& layerObj);
-    void loadDataSet(const Matrix<double>& inputs, const Vector<double>& labels) const;
+    void loadDataSet(const Matrix<T>& inputs, const Vector<T>& labels) const;
     void Train();
     
 
 private:
-    void FeedForward(Vector<double>& input);
+    void FeedForward(Vector<T>& input);
 
     template<class U>
     class Domain {
@@ -294,8 +299,8 @@ private:
     Domain<U>* tail;
 };
 
-template<class U>
-NeuralNetwork<U>::~NeuralNetwork() {
+template<class U, typename T>
+NeuralNetwork<U, T>::~NeuralNetwork() {
     if (head != nullptr) {
         while (head != nullptr) {
             Domain<U>* current = head;
@@ -307,8 +312,8 @@ NeuralNetwork<U>::~NeuralNetwork() {
     }
 }
 
-template<class U>
-void NeuralNetwork<U>::pushLayer(U& layerObj) {
+template<class U, typename T>
+void NeuralNetwork<U, T>::pushLayer(U& layerObj) {
     if (head == nullptr) {
         head = new Domain<U>(layerObj);
         std::cout << "A first Domain has been created..." << this << std::endl;
@@ -326,10 +331,10 @@ void NeuralNetwork<U>::pushLayer(U& layerObj) {
     return;
 }
 
-template<class U>
-void NeuralNetwork<U>::FeedForward(Vector<double>& input) {
+template<class U, typename T>
+void NeuralNetwork<U, T>::FeedForward(Vector<T>& input) {
     Domain<U>* current = head;
-    Vector<double>* pInput;
+    Vector<T>* pInput;
 
     pInput = &input;
 
@@ -343,13 +348,13 @@ void NeuralNetwork<U>::FeedForward(Vector<double>& input) {
     }
 }
 
-template<class U>
-void NeuralNetwork<U>::loadDataSet(const Matrix<double>& inputs, const Vector<double> & labels) const {
+template<class U, typename T>
+void NeuralNetwork<U, T>::loadDataSet(const Matrix<T>& inputs, const Vector<T> & labels) const {
     //FeedForward(input);
 };
 
-template<class U>
-void NeuralNetwork<U>::Train(){
+template<class U, typename T>
+void NeuralNetwork<U, T>::Train(){
     //FeedForward(input);
 };
 
@@ -393,7 +398,7 @@ int main()
     Layer<double> layer3(9, 9);
     Layer<double> layer4(9, 1);
 
-    NeuralNetwork<Layer<double>> NeuralNetwork;
+    NeuralNetwork<Layer<double>, double> NeuralNetwork;
     NeuralNetwork.pushLayer(layer1);
     NeuralNetwork.pushLayer(layer2);
     NeuralNetwork.pushLayer(layer3);

@@ -45,10 +45,6 @@ public:
         std::cout << "A vector hase been deleted... " << this << std::endl;
     }
 
-    T getType() {
-        return T();
-    }
-
     //Vector<T> operator+(const Vector<T>& vector);
     //T operator*(const Vector<T>& vector);
 

@@ -48,8 +48,8 @@ public:
     //Vector<T> operator+(const Vector<T>& vector);
     //T operator*(const Vector<T>& vector);
 
-    T operator*(Vector<T>& vector);
-    Vector<T> operator*(Matrix<T>& matrix);
+    T operator*(const Vector<T>& vector);
+    Vector<T> operator*(const Matrix<T>& matrix);
 
     //Vector<T> operator*(const T& scalar);
     
@@ -60,7 +60,7 @@ public:
 
     Vector<T>& operator=(const Vector<T>& vector);
 
-    T& operator[](const int index) {
+    T& operator[](const int index) const {
         return array[index];
     }
 
@@ -93,7 +93,7 @@ T Vector<T>::operator*(const Vector<T>& vector) {
 */
 
 template<typename T>
-T Vector<T>::operator*(Vector<T>& vector) {
+T Vector<T>::operator*(const Vector<T>& vector) {
     T sum = 0;
     if (this->len == vector.len) {
         for (int i = 0; i < this->len; ++i) {
@@ -104,7 +104,7 @@ T Vector<T>::operator*(Vector<T>& vector) {
 }
 
 template<typename T>
-Vector<T> Vector<T>::operator*(Matrix<T>& matrix) {
+Vector<T> Vector<T>::operator*(const Matrix<T>& matrix) {
     Vector<T> vec(matrix.cols);
     for (int i = 0; i < matrix.cols; i++) {
         vec[i] = *this * matrix[i];
@@ -189,7 +189,7 @@ public:
         std::cout << "A new matrix has been created... " << this << std::endl;
     }
 
-    Vector<T>& operator[](const int index) {
+    Vector<T>& operator[](const int index) const {
         return *matrix[index];
     }
 

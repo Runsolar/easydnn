@@ -18,6 +18,8 @@ float Sigmoid(const T& x)
 template<typename T>
 class Vector {
 public:
+    using type = T;
+
     Vector() = delete;
     explicit Vector(const int len) : len(len) {
         try {
@@ -43,6 +45,10 @@ public:
         std::cout << "A vector hase been deleted... " << this << std::endl;
     }
 
+    T getType() {
+        return T();
+    }
+
     //Vector<T> operator+(const Vector<T>& vector);
     //T operator*(const Vector<T>& vector);
 
@@ -62,6 +68,7 @@ public:
         return array[index];
     }
 
+    
 private:
     int len;
     T* array;
@@ -231,7 +238,7 @@ public:
 
     ~Layer() {}
 
-    void PrintLayer() {
+    void PrintLayer() const {
         for (int i = 0, j; i < cols; ++i) {
             for (j = 0; j < rows; ++j) {
                 std::cout << static_cast<T>(weights[i][j]) << " ";
@@ -241,7 +248,7 @@ public:
         std::cout << std::endl;
     }
 
-    void PrintOutputs() {
+    void PrintOutputs() const {
         for (int i = 0; i < outputs.len; i++) {
             std::cout << outputs[i] << std::endl;
         }
@@ -260,7 +267,7 @@ void Layer<T>::FeedForward(Vector<T>& input) {
     outputs = input * weights;
 }
 
-template<typename U>
+template<class U>
 class NeuralNetwork {
 public:
     NeuralNetwork() : head(nullptr), tail(nullptr) {
@@ -269,10 +276,14 @@ public:
     ~NeuralNetwork();
 
     void pushLayer(U& layerObj);
-    void FeedForward(Vector<double>& input);
+    void loadDataSet(const Matrix<double>& inputs, const Vector<double>& labels) const;
+    void Train();
+    
 
 private:
-    template<typename U>
+    void FeedForward(Vector<double>& input);
+
+    template<class U>
     class Domain {
     public:
         U& layer;
@@ -287,7 +298,7 @@ private:
     Domain<U>* tail;
 };
 
-template<typename U>
+template<class U>
 NeuralNetwork<U>::~NeuralNetwork() {
     if (head != nullptr) {
         while (head != nullptr) {
@@ -300,7 +311,7 @@ NeuralNetwork<U>::~NeuralNetwork() {
     }
 }
 
-template<typename U>
+template<class U>
 void NeuralNetwork<U>::pushLayer(U& layerObj) {
     if (head == nullptr) {
         head = new Domain<U>(layerObj);
@@ -319,7 +330,7 @@ void NeuralNetwork<U>::pushLayer(U& layerObj) {
     return;
 }
 
-template<typename U>
+template<class U>
 void NeuralNetwork<U>::FeedForward(Vector<double>& input) {
     Domain<U>* current = head;
     Vector<double>* pInput;
@@ -336,9 +347,20 @@ void NeuralNetwork<U>::FeedForward(Vector<double>& input) {
     }
 }
 
+template<class U>
+void NeuralNetwork<U>::loadDataSet(const Matrix<double>& inputs, const Vector<double> & labels) const {
+    //FeedForward(input);
+};
+
+template<class U>
+void NeuralNetwork<U>::Train(){
+    //FeedForward(input);
+};
+
 
 int main()
 {
+    /*
     const double inputs[8][3] = {
       {0, 0, 0}, //0
       {0, 0, 1}, //1
@@ -349,16 +371,26 @@ int main()
       {1, 1, 0}, //0
       {1, 1, 1}  //1
     };
-
-
- //   const double expectedOutput[8][1] = { {0}, {1}, {1}, {0}, {1}, {0}, {0}, {1} };
-    /*
-        Layer<double> layer1(120, 64);
-        Layer<double> layer2(64, 32);
-        Layer<double> layer3(32, 16);
-        Layer<double> layer4(16, 10);
     */
+
+ //   const double expectedLabels[8][1] = { {0}, {1}, {1}, {0}, {1}, {0}, {0}, {1} };
+
     //srand(time(NULL));
+
+    const Matrix<double> inputs(8, 3);
+    inputs[0][0] = 0; inputs[1][0] = 0; inputs[2][0] = 0;
+    inputs[0][1] = 0; inputs[1][1] = 0; inputs[2][1] = 1;
+    inputs[0][2] = 0; inputs[1][2] = 1; inputs[2][2] = 0;
+    inputs[0][3] = 0; inputs[1][3] = 1; inputs[2][3] = 1;
+    inputs[0][4] = 1; inputs[1][4] = 0; inputs[2][4] = 0;
+    inputs[0][5] = 1; inputs[1][5] = 0; inputs[2][5] = 1;
+    inputs[0][6] = 1; inputs[1][6] = 1; inputs[2][6] = 0;
+    inputs[0][7] = 1; inputs[1][7] = 1; inputs[2][7] = 1;
+
+
+    const Vector<double> expectedLabels(8);
+    expectedLabels[0] = 0; expectedLabels[1] = 1; expectedLabels[2] = 1;  expectedLabels[3] = 0;
+    expectedLabels[4] = 1; expectedLabels[5] = 0; expectedLabels[6] = 0;  expectedLabels[7] = 1;
 
     Layer<double> layer1(3, 3);
     Layer<double> layer2(3, 9);
@@ -371,12 +403,15 @@ int main()
     NeuralNetwork.pushLayer(layer3);
     NeuralNetwork.pushLayer(layer4);
 
+/*
     Vector<double> input(3);
     input[0] = 0;
     input[1] = 0;
     input[2] = 0;
 
     NeuralNetwork.FeedForward(input);
+*/
+    NeuralNetwork.loadDataSet(inputs, expectedLabels);
 
     //NeuralNetwork.pushLayer(layer0);
     //NeuralNetwork.pushLayer(Layer<double>(120, 64));

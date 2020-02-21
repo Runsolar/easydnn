@@ -18,8 +18,6 @@ float Sigmoid(const T& x)
 template<typename T>
 class Vector {
 public:
-    int len;
-
     Vector() = delete;
     explicit Vector(const int len) : len(len) {
         try {
@@ -65,7 +63,7 @@ public:
     }
 
 private:
-    
+    int len;
     T* array;
 };
 
@@ -175,9 +173,6 @@ Vector<T>& Vector<T>::operator=(const Vector<T>& vector) {
 template<typename T>
 class Matrix {
 public:
-    const int cols;
-    const int rows;
-
     Matrix() = delete;
 
     explicit Matrix(const int rows, const int cols) : rows(rows), cols(cols) {
@@ -201,7 +196,11 @@ public:
         std::cout << "A matrix has been deleted... " << this << std::endl;
     }
 
+    friend Vector<T>;
+
 private:
+    const int cols;
+    const int rows;
     Vector<T>** matrix;
 };
 

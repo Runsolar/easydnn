@@ -46,8 +46,8 @@ public:
     //Vector<T> operator+(const Vector<T>& vector);
     //T operator*(const Vector<T>& vector);
 
-    T operator*(const Vector<T>& vector);
-    Vector<T> operator*(const Matrix<T>& matrix);
+    T operator*(const Vector<T>& vector) const;
+    Vector<T> operator*(const Matrix<T>& matrix) const;
 
     //Vector<T> operator*(const T& scalar);
     
@@ -91,7 +91,7 @@ T Vector<T>::operator*(const Vector<T>& vector) {
 */
 
 template<typename T>
-T Vector<T>::operator*(const Vector<T>& vector) {
+T Vector<T>::operator*(const Vector<T>& vector) const {
     T sum = 0;
     if (this->len == vector.len) {
         for (int i = 0; i < this->len; ++i) {
@@ -102,7 +102,7 @@ T Vector<T>::operator*(const Vector<T>& vector) {
 }
 
 template<typename T>
-Vector<T> Vector<T>::operator*(const Matrix<T>& matrix) {
+Vector<T> Vector<T>::operator*(const Matrix<T>& matrix) const {
     Vector<T> vec(matrix.cols);
     for (int i = 0; i < matrix.cols; i++) {
         vec[i] = *this * matrix[i];
@@ -206,7 +206,11 @@ private:
 
 template<typename T>
 class Layer {
+
 public:
+    Vector<T> outputs;
+    T* bias;    // bias of this layer
+
     enum activation { SOFTMAX, SIGMOID, RELU };
 
     Layer(const int numsOfWeights,
@@ -224,6 +228,8 @@ public:
             }
         }
     }
+
+    ~Layer() {}
 
     void PrintLayer() {
         for (int i = 0, j; i < cols; ++i) {
@@ -243,15 +249,10 @@ public:
 
     void FeedForward(Vector<T>&);
 
-    ~Layer() {}
-
-    Vector<T> outputs;
-    T* bias;    // bias of this layer
-
 private:
     const int cols;
     const int rows;
-    Matrix<T> weights;
+    Matrix<T> weights;  
 };
 
 template<typename T>
@@ -259,7 +260,7 @@ void Layer<T>::FeedForward(Vector<T>& input) {
     outputs = input * weights;
 }
 
-template<typename T>
+template<typename U>
 class NeuralNetwork {
 public:
     NeuralNetwork() : head(nullptr), tail(nullptr) {
@@ -267,30 +268,30 @@ public:
     }
     ~NeuralNetwork();
 
-    void pushLayer(T& layerObj);
+    void pushLayer(U& layerObj);
     void FeedForward(Vector<double>& input);
 
 private:
-    template<typename T>
+    template<typename U>
     class Domain {
     public:
-        T& layer;
-        Domain<T>* pNextDomain;
-        Domain<T>* pPreviousDomain;
-        Domain(T& layer = T(), Domain<T>* pPreviousDomain = nullptr, Domain<T>* pNextDomain = nullptr) :
+        U& layer;
+        Domain<U>* pNextDomain;
+        Domain<U>* pPreviousDomain;
+        Domain(U& layer = U(), Domain<U>* pPreviousDomain = nullptr, Domain<U>* pNextDomain = nullptr) :
             layer(layer),
             pNextDomain(pNextDomain),
             pPreviousDomain(pPreviousDomain) {}
     };
-    Domain<T>* head;
-    Domain<T>* tail;
+    Domain<U>* head;
+    Domain<U>* tail;
 };
 
-template<typename T>
-NeuralNetwork<T>::~NeuralNetwork() {
+template<typename U>
+NeuralNetwork<U>::~NeuralNetwork() {
     if (head != nullptr) {
         while (head != nullptr) {
-            Domain<T>* current = head;
+            Domain<U>* current = head;
             head = current->pNextDomain;
             delete current;
             std::cout << "A Domain has been deleted... " << this << std::endl;
@@ -299,34 +300,34 @@ NeuralNetwork<T>::~NeuralNetwork() {
     }
 }
 
-template<typename T>
-void NeuralNetwork<T>::pushLayer(T& layerObj) {
+template<typename U>
+void NeuralNetwork<U>::pushLayer(U& layerObj) {
     if (head == nullptr) {
-        head = new Domain<T>(layerObj);
+        head = new Domain<U>(layerObj);
         std::cout << "A first Domain has been created..." << this << std::endl;
         return;
     }
 
-    Domain<T>* current = head;
+    Domain<U>* current = head;
     while (current->pNextDomain != nullptr) {
         current = current->pNextDomain;
     }
-    current->pNextDomain = new Domain<T>(layerObj, current);
+    current->pNextDomain = new Domain<U>(layerObj, current);
     tail = current->pNextDomain;
 
     std::cout << "A Domain has been created..." << this << std::endl;
     return;
 }
 
-template<typename T>
-void NeuralNetwork<T>::FeedForward(Vector<double>& input) {
-    Domain<T>* current = head;
+template<typename U>
+void NeuralNetwork<U>::FeedForward(Vector<double>& input) {
+    Domain<U>* current = head;
     Vector<double>* pInput;
 
     pInput = &input;
 
     while (current != nullptr) {
-        T* layer = &current->layer;
+        U* layer = &current->layer;
         layer->FeedForward(*pInput);
         pInput = &layer->outputs;
         current = current->pNextDomain;

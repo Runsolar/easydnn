@@ -172,6 +172,8 @@ Vector<T>& Vector<T>::operator=(const Vector<T>& vector) {
 
 template<typename T>
 class Matrix {
+    friend Vector<T>;
+
 public:
     Matrix() = delete;
 
@@ -195,8 +197,6 @@ public:
         delete[] matrix;
         std::cout << "A matrix has been deleted... " << this << std::endl;
     }
-
-    friend Vector<T>;
 
 private:
     const int cols;

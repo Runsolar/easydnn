@@ -1,7 +1,7 @@
 //Under construction, it doesn't work yet
 /*
 This code is devoted to my father Jesus Christ.
-Code by Danijar Volf and St. Spirit, Feb 20, 2020.
+Code by St. Spirit and Danijar Wolf, Feb 20, 2020.
 */
 
 #include <iostream>
@@ -18,10 +18,10 @@ float Sigmoid(const T& x)
 template<typename T>
 class Vector {
 public:
-    const int len;
+    int len;
 
     Vector() = delete;
-    Vector(const int len) : len(len) {
+    explicit Vector(const int len) : len(len) {
         try {
             array = new T[len]();
             std::cout << "A new vector hase been created... " << this << std::endl;
@@ -161,6 +161,14 @@ Vector<T>& Vector<T>::operator=(const Vector<T>& vector) {
             array[i] = vector.array[i];
         }
     }
+    else {
+        this->len = vector.len;
+        delete[] array;
+        array = new T[this->len]();
+        for (int i = 0; i < this->len; ++i) {
+            array[i] = vector.array[i];
+        }
+    }
     return *this;
 }
 
@@ -172,7 +180,7 @@ public:
 
     Matrix() = delete;
 
-    Matrix(const int rows, const int cols) : rows(rows), cols(cols) {
+    explicit Matrix(const int rows, const int cols) : rows(rows), cols(cols) {
         matrix = new Vector<T> * [cols];
         for (int i = 0; i < cols; i++) {
             matrix[i] = new Vector<T>(rows);

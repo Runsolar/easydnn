@@ -20,6 +20,8 @@ T Sigmoid(const T& x)
 template<typename T>
 class Neuron {
     friend Layer<T>;
+    //friend NeuralNetwork<Layer<T>, T>;
+
 public:
     Neuron() = delete;
     explicit Neuron(const int len) : len(len) {
@@ -49,17 +51,20 @@ public:
     //Neuron<T> operator+(const Neuron<T>& Neuron);
     //T operator*(const Neuron<T>& Neuron);
 
-    T operator*(const Neuron<T>& Neuron) const;
+    T operator*(const Neuron<T>& neuron) const;
     Neuron<T> operator*(const Matrix<T>& matrix) const;
+    
+    Neuron<T>& operator-=(const Neuron<T>& neuron);
+    Neuron<T> operator-(const Neuron<T>& neuron);
 
     //Neuron<T> operator*(const T& scalar);
     
 
     //Neuron<T>& operator*=(const T& scalar);
-    //Neuron<T>& operator+=(const Neuron<T>& Neuron);
-    //Neuron<T>& operator-=(const Neuron<T>& Neuron);
+    //Neuron<T>& operator+=(const Neuron<T>& neuron);
 
-    Neuron<T>& operator=(const Neuron<T>& Neuron);
+
+    Neuron<T>& operator=(const Neuron<T>& neuron);
 
     T& operator[](const int index) const {
         return array[index];
@@ -85,9 +90,9 @@ Neuron<T> Neuron<T>::operator+(const Neuron<T>& Neuron) {
 template<typename T>
 T Neuron<T>::operator*(const Neuron<T>& Neuron) {
     T sum = 0;
-    if (this->len == Neuron.len) {
+    if (this->len == neuron.len) {
         for (int i = 0; i < this->len; ++i) {
-            sum += this->array[i] * Neuron.array[i];
+            sum += this->array[i] * neuron.array[i];
         }
     }
     return sum;
@@ -95,11 +100,11 @@ T Neuron<T>::operator*(const Neuron<T>& Neuron) {
 */
 
 template<typename T>
-T Neuron<T>::operator*(const Neuron<T>& Neuron) const {
+T Neuron<T>::operator*(const Neuron<T>& neuron) const {
     T sum = 0;
-    if (this->len == Neuron.len) {
+    if (this->len == neuron.len) {
         for (int i = 0; i < this->len; ++i) {
-            sum += this->array[i] * Neuron.array[i];
+            sum += this->array[i] * neuron.array[i];
         }
     }
     return sum;
@@ -113,6 +118,26 @@ Neuron<T> Neuron<T>::operator*(const Matrix<T>& matrix) const {
     }
     return vec;
 }
+
+template<typename T>
+Neuron<T> Neuron<T>::operator-(const Neuron<T>& neuron) {
+    Neuron<T> vec(*this);
+    vec -= neuron;
+    return vec;
+}
+
+template<typename T>
+Neuron<T>& Neuron<T>::operator-=(const Neuron<T>& neuron) {
+    //this += Neuron * (-1);
+    if (this->len == neuron.len) {
+        for (int i = 0; i < this->len; i++) {
+            this->array[i] -= neuron.array[i];
+        }
+    }
+    return *this;
+}
+
+
 
 /*
 template<typename T>
@@ -148,13 +173,9 @@ Neuron<T>& Neuron<T>::operator+=(const Neuron<T>& Neuron) {
     return *this;
 }
 */
-/*
-template<typename T>
-Neuron<T>& Neuron<T>::operator-=(const Neuron<T>& Neuron) {
-    this += Neuron * (-1);
-    return *this;
-}
-*/
+
+
+
 template<typename T>
 Neuron<T>& Neuron<T>::operator=(const Neuron<T>& Neuron) {
     if (this == &Neuron) return *this;
@@ -210,8 +231,11 @@ private:
     Neuron<T>** matrix;
 };
 
+
+
 template<typename T>
 class Layer {
+    friend NeuralNetwork<Layer<T>, T>;
 
 public:
     using element_type = typename std::remove_reference< decltype(std::declval<T>) >::type;
@@ -257,7 +281,9 @@ public:
         }
     }
 
-    void FeedForward(Neuron<T>&);
+    void BackPropagation(const Neuron<T>& input);
+    void FeedForward(const Neuron<T>&);
+
     
 private:
     const int cols;
@@ -268,7 +294,12 @@ private:
 };
 
 template<typename T>
-void Layer<T>::FeedForward(Neuron<T>& input) {
+void Layer<T>::BackPropagation(const Neuron<T>& input) {
+
+}
+
+template<typename T>
+void Layer<T>::FeedForward(const Neuron<T>& input) {
     outputs = input * weights;
     sigmoid_mapper();
 }
@@ -279,6 +310,8 @@ void Layer<T>::sigmoid_mapper() {
         outputs[i] = Sigmoid(outputs[i]);
     }
 }
+
+
 
 template<class U, typename T>
 class NeuralNetwork {
@@ -295,6 +328,7 @@ public:
     void Train();
 
 private:
+    void BackPropagation(Neuron<T>& labels);
     void FeedForward(Neuron<T>& input);
 
     template<class U>
@@ -345,17 +379,40 @@ void NeuralNetwork<U, T>::pushLayer(U& layerObj) {
 }
 
 template<class U, typename T>
+void NeuralNetwork<U, T>::BackPropagation(Neuron<T>& labels) {
+    Domain<U>* current = tail;
+    //Neuron<T> errors;
+    Neuron<T>* pInput;
+    pInput = &labels;
+
+    while (current != nullptr) {
+        U* layer = &current->layer;
+        layer->BackPropagation(*pInput);
+
+        pInput = &layer->outputs;
+        current = current->pPreviousDomain;
+    }
+    //Neuron<T> errors(layer->cols);
+    //errors = layer->outputs - labels;
+
+
+
+};
+
+template<class U, typename T>
 void NeuralNetwork<U, T>::FeedForward(Neuron<T>& input) {
     Domain<U>* current = head;
     Neuron<T>* pInput;
 
     pInput = &input;
+    U* layer;
 
     while (current != nullptr) {
-        U* layer = &current->layer;
+        layer = &current->layer;
         layer->FeedForward(*pInput);
         pInput = &layer->outputs;
         current = current->pNextDomain;
+        
         layer->PrintOutputs(); 
         std::cout << std::endl;
     }
@@ -364,6 +421,7 @@ void NeuralNetwork<U, T>::FeedForward(Neuron<T>& input) {
 template<class U, typename T>
 void NeuralNetwork<U, T>::loadDataSet(const Matrix<T>& inputs, const Neuron<T> & labels) {
     Neuron<T> input(inputs.cols);
+    Neuron<T> _labels(labels);
 
     for (int j = 0; j < inputs.rows; ++j)
     {
@@ -371,8 +429,9 @@ void NeuralNetwork<U, T>::loadDataSet(const Matrix<T>& inputs, const Neuron<T> &
             //std::cout << inputs[i][j] << " ";
             input[i] = inputs[i][j];
         }
-        std::cout << "FeedForward, the row is: " << j <<std::endl;
+        std::cout << "Row is..........: " << j <<std::endl;
         FeedForward(input);
+        BackPropagation(_labels);
     }
 
     

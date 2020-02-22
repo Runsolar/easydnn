@@ -8,18 +8,19 @@ Code by St. Spirit and Danijar Wolf, Feb 20, 2020.
 #include<ctime>
 
 template<typename T> class Matrix;
+template<class U, typename T> class NeuralNetwork;
+template<typename T> class Layer;
 
 template<typename T>
-float Sigmoid(const T& x)
+T Sigmoid(const T& x)
 {
     return 1 / (1 + exp(-x));
 }
 
 template<typename T>
 class Vector {
+    friend Layer<T>;
 public:
-    using type = T;
-
     Vector() = delete;
     explicit Vector(const int len) : len(len) {
         try {
@@ -177,6 +178,7 @@ Vector<T>& Vector<T>::operator=(const Vector<T>& vector) {
 template<typename T>
 class Matrix {
     friend Vector<T>;
+    friend NeuralNetwork<Layer<T>, T>;
 
 public:
     Matrix() = delete;
@@ -213,6 +215,8 @@ class Layer {
 
 public:
     using element_type = typename std::remove_reference< decltype(std::declval<T>) >::type;
+    //using type = T;
+    //type Type = T();
 
     Vector<T> outputs;
     T* bias;    // bias of this layer
@@ -254,6 +258,7 @@ public:
     }
 
     void FeedForward(Vector<T>&);
+    void sigmoid_mapper();
 
 private:
     const int cols;
@@ -264,6 +269,14 @@ private:
 template<typename T>
 void Layer<T>::FeedForward(Vector<T>& input) {
     outputs = input * weights;
+    sigmoid_mapper();
+}
+
+template<typename T>
+void Layer<T>::sigmoid_mapper() {
+    for (int i = 0; i < outputs.len; ++i) {
+        outputs[i] = Sigmoid(outputs[i]);
+    }
 }
 
 template<class U, typename T>
@@ -277,9 +290,8 @@ public:
     ~NeuralNetwork();
 
     void pushLayer(U& layerObj);
-    void loadDataSet(const Matrix<T>& inputs, const Vector<T>& labels) const;
+    void loadDataSet(const Matrix<T>& inputs, const Vector<T>& labels);
     void Train();
-    
 
 private:
     void FeedForward(Vector<T>& input);
@@ -343,14 +355,26 @@ void NeuralNetwork<U, T>::FeedForward(Vector<T>& input) {
         layer->FeedForward(*pInput);
         pInput = &layer->outputs;
         current = current->pNextDomain;
-        //layer->PrintOutputs(); 
-        //std::cout << std::endl;
+        layer->PrintOutputs(); 
+        std::cout << std::endl;
     }
 }
 
 template<class U, typename T>
-void NeuralNetwork<U, T>::loadDataSet(const Matrix<T>& inputs, const Vector<T> & labels) const {
-    //FeedForward(input);
+void NeuralNetwork<U, T>::loadDataSet(const Matrix<T>& inputs, const Vector<T> & labels) {
+    Vector<T> input(inputs.cols);
+
+    for (int j = 0; j < inputs.rows; ++j)
+    {
+        for (int i = 0; i < inputs.cols; ++i) {
+            //std::cout << inputs[i][j] << " ";
+            input[i] = inputs[i][j];
+        }
+        std::cout << "FeedForward, the row is: " << j <<std::endl;
+        FeedForward(input);
+    }
+
+    
 };
 
 template<class U, typename T>

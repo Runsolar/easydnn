@@ -104,7 +104,7 @@ const T Neuron<T>::dot(const Neuron<T>& neuron) const {
 template<typename T>
 const Neuron<T> Neuron<T>::operator*(const Matrix<T>& matrix) const {
     Neuron<T> vec(matrix.cols);
-    for (int i = 0; i < matrix.cols; i++) {
+    for (int i = 0; i < matrix.cols; ++i) {
         vec[i] = dot(matrix[i]);
     }
     return vec;
@@ -113,7 +113,7 @@ const Neuron<T> Neuron<T>::operator*(const Matrix<T>& matrix) const {
 template<typename T>
 const Neuron<T> Neuron<T>::operator*(const Neuron<T>& neuron) const {
     Neuron<T> vec(neuron.len);
-    for (int i = 0; i < len; i++) {
+    for (int i = 0; i < len; ++i) {
         vec[i] = array[i] * neuron.array[i];
     }
     return vec;
@@ -130,7 +130,7 @@ template<typename T>
 const Neuron<T>& Neuron<T>::operator-=(const Neuron<T>& neuron) const {
     //this += Neuron * (-1);
     if (len == neuron.len) {
-        for (int i = 0; i < len; i++) {
+        for (int i = 0; i < len; ++i) {
             array[i] -= neuron.array[i];
         }
     }
@@ -170,7 +170,7 @@ public:
 
     explicit Matrix(const int rows, const int cols) : rows(rows), cols(cols) {
         matrix = new Neuron<T> * [cols];
-        for (int i = 0; i < cols; i++) {
+        for (int i = 0; i < cols; ++i) {
             matrix[i] = new Neuron<T>(rows);
         }
 
@@ -228,7 +228,7 @@ public:
     }
 
     ~Matrix() {
-        for (int i = 0; i < cols; i++) {
+        for (int i = 0; i < cols; ++i) {
             delete matrix[i];
         }
         delete[] matrix;
@@ -286,7 +286,7 @@ public:
     }
 
     void PrintOutputs() const {
-        for (int i = 0; i < outputs.len; i++) {
+        for (int i = 0; i < outputs.len; ++i) {
             std::cout << outputs[i] << std::endl;
         }
     }

@@ -70,6 +70,10 @@ public:
         std::cout << "A Neuron hase been deleted... " << this << std::endl;
     }
 
+    T& operator[](const int index) const {
+        return array[index];
+    }
+
     //Neuron<T> operator+(const Neuron<T>& Neuron);
     //T operator*(const Neuron<T>& Neuron);
 
@@ -89,11 +93,6 @@ public:
 
     Neuron<T>& operator=(const Neuron<T>& neuron);
 
-    T& operator[](const int index) const {
-        return array[index];
-    }
-
-    
 private:
     int len;
     T* array;
@@ -247,8 +246,27 @@ public:
         std::cout << "A new matrix has been created... " << this << std::endl;
     }
 
+    T& at(const int i, const int j) {
+        Neuron<T>& Col = *matrix[i];
+        return Col[j];
+    }
+
     Neuron<T>& operator[](const int index) const {
         return *matrix[index];
+    }
+
+    Neuron<T> operator*(const Neuron<T>& vec) {
+        //T mul;
+        Neuron<T> res(this->rows);
+
+        for (int j = 0; j < this->rows; ++j) {
+            res[j] = 0;
+            for (int i = 0; i < this->cols; ++i) {
+                res[j] += this->at(i, j) * vec[i];
+            }
+        }
+
+        return res;
     }
 
     ~Matrix() {
@@ -334,6 +352,9 @@ Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors) {
     Neuron<T> unitVector(outputs.len);
 
     gradients_layer = outputs*(unitVector - outputs);
+    weights_delta_layer = errors * gradients_layer;
+
+
 
     return weights_delta_layer;
 }
@@ -422,33 +443,29 @@ template<class U, typename T>
 void NeuralNetwork<U, T>::BackPropagation(Neuron<T>& labels) {
     Domain<U>* current = tail;
     Neuron<T> errors(labels);
-    //Neuron<T>* pInput;
-    //pInput = &labels;
-    //errors = labels;
-
+    
     U* layer;
     while (current != nullptr) {
-        layer = &current->layer;
-        errors = layer->BackPropagation(errors);
 
-        //errors = &layer->outputs;
+        layer = &current->layer;
+
+        if (current->pNextDomain == nullptr) {
+            errors = layer->outputs - labels;
+        }
+        errors = layer->BackPropagation(errors);
+        errors = layer->weights * errors;
+
         current = current->pPreviousDomain;
     }
-    //Neuron<T> errors(layer->cols);
-    //errors = layer->outputs - labels;
-
-
-
 };
 
 template<class U, typename T>
 void NeuralNetwork<U, T>::FeedForward(Neuron<T>& input) {
     Domain<U>* current = head;
     Neuron<T>* pInput;
-
     pInput = &input;
+    
     U* layer;
-
     while (current != nullptr) {
         layer = &current->layer;
         layer->FeedForward(*pInput);

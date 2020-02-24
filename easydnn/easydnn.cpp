@@ -62,7 +62,7 @@ public:
         for (int i = 0; i < len; ++i) {
             array[i] = vec.array[i];
         }
-        this->scalar = vec.scalar;
+        scalar = vec.scalar;
     }
 
     ~Neuron() {
@@ -125,9 +125,9 @@ T Neuron<T>::operator*(const Neuron<T>& Neuron) {
 template<typename T>
 const T Neuron<T>::dot(const Neuron<T>& neuron) const {
     T sum = 0;
-    if (this->len == neuron.len) {
-        for (int i = 0; i < this->len; ++i) {
-            sum += this->array[i] * neuron.array[i];
+    if (len == neuron.len) {
+        for (int i = 0; i < len; ++i) {
+            sum += array[i] * neuron.array[i];
         }
     }
     return sum;
@@ -137,7 +137,7 @@ template<typename T>
 const Neuron<T> Neuron<T>::operator*(const Matrix<T>& matrix) const {
     Neuron<T> vec(matrix.cols);
     for (int i = 0; i < matrix.cols; i++) {
-        vec[i] = this->dot(matrix[i]);
+        vec[i] = dot(matrix[i]);
     }
     return vec;
 }
@@ -145,8 +145,8 @@ const Neuron<T> Neuron<T>::operator*(const Matrix<T>& matrix) const {
 template<typename T>
 const Neuron<T> Neuron<T>::operator*(const Neuron<T>& neuron) const {
     Neuron<T> vec(neuron.len);
-    for (int i = 0; i < this->len; i++) {
-        vec[i] = this->array[i] * neuron.array[i];
+    for (int i = 0; i < len; i++) {
+        vec[i] = array[i] * neuron.array[i];
     }
     return vec;
 }
@@ -161,9 +161,9 @@ const Neuron<T> Neuron<T>::operator-(const Neuron<T>& neuron) const {
 template<typename T>
 const Neuron<T>& Neuron<T>::operator-=(const Neuron<T>& neuron) const {
     //this += Neuron * (-1);
-    if (this->len == neuron.len) {
-        for (int i = 0; i < this->len; i++) {
-            this->array[i] -= neuron.array[i];
+    if (len == neuron.len) {
+        for (int i = 0; i < len; i++) {
+            array[i] -= neuron.array[i];
         }
     }
     return *this;
@@ -210,19 +210,19 @@ Neuron<T>& Neuron<T>::operator+=(const Neuron<T>& Neuron) {
 template<typename T>
 Neuron<T>& Neuron<T>::operator=(const Neuron<T>& neuron) {
     if (this == &neuron) return *this;
-    if (this->len == neuron.len) {
-        for (int i = 0; i < this->len; ++i) {
+    if (len == neuron.len) {
+        for (int i = 0; i < len; ++i) {
             array[i] = neuron.array[i];
         }
-        this->scalar = neuron.scalar;
+        scalar = neuron.scalar;
     }
     else {
-        this->len = neuron.len;
+        len = neuron.len;
         
         if(array != nullptr) delete[] array;
 
-        array = new T[this->len]();
-        for (int i = 0; i < this->len; ++i) {
+        array = new T[len]();
+        for (int i = 0; i < len; ++i) {
             array[i] = neuron.array[i];
         }
     }
@@ -256,13 +256,13 @@ public:
     }
 
     Neuron<T> operator*(const Neuron<T>& vec) {
-        //T mul;
-        Neuron<T> res(this->rows);
+        Neuron<T> res(rows);
 
-        for (int j = 0; j < this->rows; ++j) {
+        for (int j = 0; j < rows; ++j) {
             res[j] = 0;
-            for (int i = 0; i < this->cols; ++i) {
-                res[j] += this->at(i, j) * vec[i];
+            for (int i = 0; i < cols; ++i) {
+                //res[j] += this->at(i, j) * vec[i];
+                res[j] += (*matrix[i])[j] * vec[i];
             }
         }
 

@@ -46,7 +46,7 @@ public:
     explicit Neuron(const int len) : len(len), scalar(0), array(nullptr) {
         try {
             array = new T[len]();
-            std::cout << "A new Neuron hase been created... " << this << std::endl;
+            //std::cout << "A new Neuron hase been created... " << this << std::endl;
         }
         catch (std::exception & ex) {
             std::cout << "En exception is happened... " << ex.what() << std::endl;
@@ -57,7 +57,7 @@ public:
     //explicit Neuron(T scalar) : scalar(scalar), len(0), array(nullptr) {}
 
     Neuron(const Neuron<T>& vec): Neuron(vec.len) {
-        std::cout << "Coppy... this: " << this <<  std::endl;
+        //std::cout << "Coppy... this: " << this <<  std::endl;
         if (this == &vec) return;
         for (int i = 0; i < len; ++i) {
             array[i] = vec.array[i];
@@ -67,7 +67,7 @@ public:
 
     ~Neuron() {
         delete[] array;
-        std::cout << "A Neuron hase been deleted... " << this << std::endl;
+        //std::cout << "A Neuron hase been deleted... " << this << std::endl;
     }
 
     T& operator[](const int index) const {
@@ -174,7 +174,7 @@ public:
             matrix[i] = new Neuron<T>(rows);
         }
 
-        std::cout << "A new matrix has been created... " << this << std::endl;
+        //std::cout << "A new matrix has been created... " << this << std::endl;
     }
 
     T& at(const int i, const int j) {
@@ -192,8 +192,35 @@ public:
         for (int j = 0; j < rows; ++j) {
             res[j] = 0;
             for (int i = 0; i < cols; ++i) {
-                //res[j] += at(i, j) * vec[i];
                 res[j] += (*matrix[i])[j] * vec[i];
+            }
+        }
+
+        return res;
+    }
+
+    Matrix<T> operator*(const Matrix<T>& m) {
+        Matrix<T> res(rows, m.cols);
+
+        for (int j = 0; j < rows; ++j) {
+            for (int i = 0; i < cols; ++i) {
+                res[i][j] = 0;
+                for (int k = 0; k < cols; ++k) {
+                    res[i][j] = res[i][j] + matrix[k][j] * m[i][k];
+                }
+            }
+        }
+
+        return res;
+    }
+
+    Matrix<T> operator-(const Matrix<T>& m) {
+        Matrix<T> res(rows, cols);
+
+        for (int j = 0; j < rows; ++j) {
+            for (int i = 0; i < cols; ++i) {
+                res[i][j] = matrix[i][j] - m[i][j];
+                //res[j] += (*matrix[i])[j] * vec[i];
             }
         }
 
@@ -205,7 +232,7 @@ public:
             delete matrix[i];
         }
         delete[] matrix;
-        std::cout << "A matrix has been deleted... " << this << std::endl;
+        //std::cout << "A matrix has been deleted... " << this << std::endl;
     }
 
 private:

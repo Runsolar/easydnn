@@ -74,22 +74,12 @@ public:
         return array[index];
     }
 
-    //Neuron<T> operator+(const Neuron<T>& Neuron);
-    //T operator*(const Neuron<T>& Neuron);
-
     const T dot(const Neuron<T>& neuron) const;
     const Neuron<T> operator*(const Matrix<T>& matrix) const;
     const Neuron<T> operator*(const Neuron<T>& neuron) const;
 
     const Neuron<T>& operator-=(const Neuron<T>& neuron) const;
     const Neuron<T> operator-(const Neuron<T>& neuron) const;
-
-    //Neuron<T> operator*(const T& scalar);
-    
-
-    //Neuron<T>& operator*=(const T& scalar);
-    //Neuron<T>& operator+=(const Neuron<T>& neuron);
-
 
     Neuron<T>& operator=(const Neuron<T>& neuron);
 
@@ -99,28 +89,6 @@ private:
     T scalar;
 };
 
-/*
-template<typename T>
-Neuron<T> Neuron<T>::operator+(const Neuron<T>& Neuron) {
-    if (this->len == Neuron->len) {
-        for (int i = 0; i < this->len; ++i) {
-            this->array[i] = this->array[i] + Neuron->array[i];
-        }
-    }
-    return *this;
-}
-
-template<typename T>
-T Neuron<T>::operator*(const Neuron<T>& Neuron) {
-    T sum = 0;
-    if (this->len == neuron.len) {
-        for (int i = 0; i < this->len; ++i) {
-            sum += this->array[i] * neuron.array[i];
-        }
-    }
-    return sum;
-}
-*/
 
 template<typename T>
 const T Neuron<T>::dot(const Neuron<T>& neuron) const {
@@ -168,43 +136,6 @@ const Neuron<T>& Neuron<T>::operator-=(const Neuron<T>& neuron) const {
     }
     return *this;
 }
-
-
-/*
-template<typename T>
-Neuron<T> Neuron<T>::operator*(const T& scalar) {
-    Neuron<T> vec(this->len);
-
-    for (int i = 0; i < this->len; ++i) {
-        vec[i] = this->array[i] * scalar;
-    }
-    return vec;
-}
-*/
-
-
-/*
-template<typename T>
-Neuron<T>& Neuron<T>::operator*=(const T& scalar) {
-    for (int i = 0; i < this->len; ++i) {
-        this->array[i] *= scalar;
-    }
-    return *this;
-}
-*/
-
-/*
-template<typename T>
-Neuron<T>& Neuron<T>::operator+=(const Neuron<T>& Neuron) {
-    if (this->len == Neuron->len) {
-        for (int i = 0; i < this->len; ++i) {
-            this->array[i] += Neuron->array[i];
-        }
-    }
-    return *this;
-}
-*/
-
 
 
 template<typename T>
@@ -261,7 +192,7 @@ public:
         for (int j = 0; j < rows; ++j) {
             res[j] = 0;
             for (int i = 0; i < cols; ++i) {
-                //res[j] += this->at(i, j) * vec[i];
+                //res[j] += at(i, j) * vec[i];
                 res[j] += (*matrix[i])[j] * vec[i];
             }
         }

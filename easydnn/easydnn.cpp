@@ -13,7 +13,7 @@ template<typename T> class Matrix;
 template<typename T> class Layer;
 template<class U, typename T> class NeuralNetwork;
 
-#define DEFAULT_LEARNINGRATE 0.01
+#define DEFAULT_LEARNINGRATE 0.1
 
 /*
 template<typename T>
@@ -182,9 +182,9 @@ public:
     }
 
     Matrix(const Matrix<T>& matrixObj): Matrix(matrixObj.rows, matrixObj.cols) {
-        for (int i = 0; i < cols; ++i) {
+        for (int i = 0, j; i < cols; ++i) {
             Neuron<T>& col = *matrix[i];
-            for (int j = 0; j < rows; j++) {
+            for (j = 0; j < rows; j++) {
                 col[j] = matrixObj[i][j];
             }
         }
@@ -202,8 +202,8 @@ public:
     Matrix<T> operator*(const T& scalar) {
         Matrix<T> res(rows, cols);
 
-        for (int j = 0; j < rows; ++j) {
-            for (int i = 0; i < cols; ++i) {
+        for (int j = 0, i; j < rows; ++j) {
+            for (i = 0; i < cols; ++i) {
                 res[i][j] = (*matrix[i])[j] * scalar;
             }
         }
@@ -228,7 +228,7 @@ public:
         Matrix<T> res(rows, m.cols);
 
         for (int j = 0, i, k; j < rows; ++j) {
-            for (i = 0; i < cols; ++i) {
+            for (i = 0; i < m.cols; ++i) {
                 res[i][j] = 0;
                 for (k = 0; k < cols; ++k) {
                     res[i][j] = res[i][j] + (*matrix[k])[j] * m[i][k];
@@ -347,20 +347,6 @@ private:
 
 template<typename T>
 Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors, const Neuron<T>& input, const T& learning_rate) {
-/*
-    std::cout << "Errors" << std::endl;
-    for (int i = 0; i < outputs.len; ++i) {
-        std::cout << errors[i] << std::endl;
-    }
-    std::cout << std::endl;
-
-    std::cout << "Input" << std::endl;
-    for (int i = 0; i < outputs.len; ++i) {
-        std::cout << input[i] << std::endl;
-    }
-    std::cout << std::endl;
-*/
-
     Neuron<T> gradients_layer(outputs.len);
     Neuron<T> weights_delta_layer(outputs.len);
     Neuron<T> unitVector(outputs.len);
@@ -370,13 +356,13 @@ Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors, const Neuron<T>& in
 
     Matrix<T> in(input.len, 1);
     Matrix<T> wdl(1, weights_delta_layer.len);
-    Matrix<T> gradients(in.rows, wdl.cols);
+    //Matrix<T> gradients(in.rows, wdl.cols);
     
     in[0] = input;
     for(int i=0; i< weights_delta_layer.len; ++i) wdl[i][0] = weights_delta_layer[i];
 
-    gradients = in * wdl;
-    
+    //gradients = in * wdl;
+    /*
     for (int j = 0, i; j < rows; ++j) {
         for (i = 0; i < cols; ++i) {
             std::cout << static_cast<T>(gradients[i][j]) << "   ";
@@ -384,8 +370,8 @@ Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors, const Neuron<T>& in
         std::cout << std::endl;
     }
     std::cout << std::endl;
-    
-    weights = weights - gradients * learning_rate;
+    */
+    weights -= in * wdl * learning_rate;
 
     return weights_delta_layer;
 }
@@ -504,8 +490,8 @@ void NeuralNetwork<U, T>::BackPropagation(const Neuron<T>& input, const Neuron<T
 
         current = current->pPreviousDomain;
 
-        //pLayer->PrintLayer();
-        //std::cout << std::endl;
+        pLayer->PrintLayer();
+        std::cout << std::endl;
     }
 };
 
@@ -571,7 +557,7 @@ int main()
 
  //   const double expectedLabels[8][1] = { {0}, {1}, {1}, {0}, {1}, {0}, {0}, {1} };
 
-    //srand(time(NULL));
+    srand(time(NULL));
 
     const Matrix<double> inputs(8, 3);
     inputs[0][0] = 0; inputs[1][0] = 0; inputs[2][0] = 0;
@@ -593,7 +579,7 @@ int main()
     Layer<double> layer3(9, 9);
     Layer<double> layer4(9, 1);
 
-    NeuralNetwork<Layer<double>, double> NeuralNetwork(0.001);
+    NeuralNetwork<Layer<double>, double> NeuralNetwork(0.1);
     NeuralNetwork.pushLayer(layer1);
     NeuralNetwork.pushLayer(layer2);
     NeuralNetwork.pushLayer(layer3);

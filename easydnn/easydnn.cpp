@@ -239,14 +239,20 @@ public:
         return res;
     }
 
-    Matrix<T> operator-(const Matrix<T>& m) {
-        Matrix<T> res(rows, cols);
-
+    Matrix<T>& operator-=(const Matrix<T>& m) {
         for (int j = 0; j < rows; ++j) {
             for (int i = 0; i < cols; ++i) {
-                res[i][j] = (*matrix[i])[j] - m[i][j];
+                (*matrix[i])[j] -= m[i][j];
             }
         }
+        return *this;
+    }
+
+    Matrix<T> operator-(const Matrix<T>& m) {
+        Matrix<T> res(rows, cols);
+        
+        res = *this;
+        res -= m;
 
         return res;
     }
@@ -331,7 +337,6 @@ public:
     Neuron<T> BackPropagation(const Neuron<T>& input, const Neuron<T>& inputs, const T& learning_rate);
     void FeedForward(const Neuron<T>&);
 
-    
 private:
     const int cols;
     const int rows;
@@ -354,7 +359,7 @@ Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors, const Neuron<T>& in
     //Matrix<T> gradients(in.rows, wdl.cols);
     
     //gradients = in * wdl;
-    weights = weights - in * wdl * learning_rate;
+    weights -= in * wdl * learning_rate;
 
     return weights_delta_layer;
 }

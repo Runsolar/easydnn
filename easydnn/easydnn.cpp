@@ -214,9 +214,9 @@ public:
     Neuron<T> operator*(const Neuron<T>& vec) {
         Neuron<T> res(rows);
 
-        for (int j = 0; j < rows; ++j) {
+        for (int j = 0, i; j < rows; ++j) {
             res[j] = 0;
-            for (int i = 0; i < cols; ++i) {
+            for (i = 0; i < cols; ++i) {
                 res[j] += (*matrix[i])[j] * vec[i];
             }
         }
@@ -227,10 +227,10 @@ public:
     Matrix<T> operator*(const Matrix<T>& m) {
         Matrix<T> res(rows, m.cols);
 
-        for (int j = 0; j < rows; ++j) {
-            for (int i = 0; i < cols; ++i) {
+        for (int j = 0, i, k; j < rows; ++j) {
+            for (i = 0; i < cols; ++i) {
                 res[i][j] = 0;
-                for (int k = 0; k < cols; ++k) {
+                for (k = 0; k < cols; ++k) {
                     res[i][j] = res[i][j] + (*matrix[k])[j] * m[i][k];
                 }
             }
@@ -240,8 +240,8 @@ public:
     }
 
     Matrix<T>& operator-=(const Matrix<T>& m) {
-        for (int j = 0; j < rows; ++j) {
-            for (int i = 0; i < cols; ++i) {
+        for (int j = 0, i; j < rows; ++j) {
+            for (i = 0; i < cols; ++i) {
                 (*matrix[i])[j] -= m[i][j];
             }
         }
@@ -259,9 +259,9 @@ public:
 
     Matrix<T>& operator=(const Matrix<T>& matrixObj) {
         if (cols == matrixObj.cols && rows == matrixObj.rows) {
-            for (int i = 0; i < cols; ++i) {
+            for (int i = 0, j; i < cols; ++i) {
                 Neuron<T>& col = *matrix[i];
-                for (int j = 0; j < rows; j++) {
+                for (j = 0; j < rows; j++) {
                     col[j] = matrixObj[i][j];
                 }
             }
@@ -319,9 +319,9 @@ public:
     ~Layer() {}
 
     void PrintLayer() const {
-        for (int i = 0, j; i < cols; ++i) {
-            for (j = 0; j < rows; ++j) {
-                std::cout << static_cast<T>(weights[i][j]) << " ";
+        for (int j = 0, i; j < rows; ++j) {
+            for (i = 0; i < cols; ++i) {
+                std::cout << static_cast<T>(weights[i][j]) << "   ";
             }
             std::cout << std::endl;
         }
@@ -346,7 +346,21 @@ private:
 };
 
 template<typename T>
-Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors, const Neuron<T>& inputs, const T& learning_rate) {
+Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors, const Neuron<T>& input, const T& learning_rate) {
+/*
+    std::cout << "Errors" << std::endl;
+    for (int i = 0; i < outputs.len; ++i) {
+        std::cout << errors[i] << std::endl;
+    }
+    std::cout << std::endl;
+
+    std::cout << "Input" << std::endl;
+    for (int i = 0; i < outputs.len; ++i) {
+        std::cout << input[i] << std::endl;
+    }
+    std::cout << std::endl;
+*/
+
     Neuron<T> gradients_layer(outputs.len);
     Neuron<T> weights_delta_layer(outputs.len);
     Neuron<T> unitVector(outputs.len);
@@ -354,12 +368,24 @@ Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors, const Neuron<T>& in
     gradients_layer = outputs*(unitVector - outputs);
     weights_delta_layer = errors * gradients_layer;
 
-    Matrix<T> in(inputs.len, 1);
+    Matrix<T> in(input.len, 1);
     Matrix<T> wdl(1, weights_delta_layer.len);
-    //Matrix<T> gradients(in.rows, wdl.cols);
+    Matrix<T> gradients(in.rows, wdl.cols);
     
-    //gradients = in * wdl;
-    weights -= in * wdl * learning_rate;
+    in[0] = input;
+    for(int i=0; i< weights_delta_layer.len; ++i) wdl[i][0] = weights_delta_layer[i];
+
+    gradients = in * wdl;
+    
+    for (int j = 0, i; j < rows; ++j) {
+        for (i = 0; i < cols; ++i) {
+            std::cout << static_cast<T>(gradients[i][j]) << "   ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+    
+    weights = weights - gradients * learning_rate;
 
     return weights_delta_layer;
 }
@@ -396,11 +422,11 @@ public:
     ~NeuralNetwork();
 
     void pushLayer(U& layerObj);
-    void loadDataSet(const Matrix<T>& inputs, const Neuron<T>& labels) const;
+    void loadDataSet(const Matrix<T>& inputs, const Matrix<T>& labels) const;
     void Train();
 
 private:
-    void BackPropagation(const Neuron<T>& labels, const Neuron<T>& input) const;
+    void BackPropagation(const Neuron<T>& input, const Neuron<T>& label) const;
     void FeedForward(const Neuron<T>& input) const;
 
     template<class U>
@@ -451,9 +477,9 @@ void NeuralNetwork<U, T>::pushLayer(U& layerObj) {
 }
 
 template<class U, typename T>
-void NeuralNetwork<U, T>::BackPropagation(const Neuron<T>& labels, const Neuron<T>& input) const {
+void NeuralNetwork<U, T>::BackPropagation(const Neuron<T>& input, const Neuron<T>& label) const {
     Domain<U>* current = tail;
-    Neuron<T> errors(labels);
+    Neuron<T> errors(label);
     const Neuron<T>* pInput;
     
     U* pLayer;
@@ -463,7 +489,7 @@ void NeuralNetwork<U, T>::BackPropagation(const Neuron<T>& labels, const Neuron<
         pLayer = &current->layer;
 
         if (current->pNextDomain == nullptr) {
-            errors = pLayer->outputs - labels;
+            errors = pLayer->outputs - label;
         }
         if (current->pPreviousDomain != nullptr) {
             pPreviousLayer = &current->pPreviousDomain->layer; 
@@ -477,6 +503,9 @@ void NeuralNetwork<U, T>::BackPropagation(const Neuron<T>& labels, const Neuron<
         errors = pLayer->weights * errors;
 
         current = current->pPreviousDomain;
+
+        //pLayer->PrintLayer();
+        //std::cout << std::endl;
     }
 };
 
@@ -493,15 +522,15 @@ void NeuralNetwork<U, T>::FeedForward(const Neuron<T>& input) const {
         pInput = &layer->outputs;
         current = current->pNextDomain;
         
-        layer->PrintOutputs(); 
-        std::cout << std::endl;
+        //layer->PrintOutputs(); 
+        //std::cout << std::endl;
     }
 }
 
 template<class U, typename T>
-void NeuralNetwork<U, T>::loadDataSet(const Matrix<T>& inputs, const Neuron<T> & labels) const {
+void NeuralNetwork<U, T>::loadDataSet(const Matrix<T>& inputs, const Matrix<T> & labels) const {
     Neuron<T> input(inputs.cols);
-    //Neuron<T> _labels(labels);
+    Neuron<T> label(labels.cols);
 
     for (int j = 0; j < inputs.rows; ++j)
     {
@@ -509,9 +538,11 @@ void NeuralNetwork<U, T>::loadDataSet(const Matrix<T>& inputs, const Neuron<T> &
             //std::cout << inputs[i][j] << " ";
             input[i] = inputs[i][j];
         }
-        std::cout << "Row is..........: " << j <<std::endl;
+
+        label[0] = labels[0][j];
+        std::cout << "Row is..........: " << j << "  Label is:  " << label[0] << std::endl;
         FeedForward(input);
-        BackPropagation(labels, input);
+        BackPropagation(input, label);
     }
 
     
@@ -553,9 +584,9 @@ int main()
     inputs[0][7] = 1; inputs[1][7] = 1; inputs[2][7] = 1;
 
 
-    const Neuron<double> expectedLabels(8);
-    expectedLabels[0] = 0; expectedLabels[1] = 1; expectedLabels[2] = 1;  expectedLabels[3] = 0;
-    expectedLabels[4] = 1; expectedLabels[5] = 0; expectedLabels[6] = 0;  expectedLabels[7] = 1;
+    const Matrix<double> expectedLabels(8, 1);
+    expectedLabels[0][0] = 0; expectedLabels[0][1] = 1; expectedLabels[0][2] = 1;  expectedLabels[0][3] = 0;
+    expectedLabels[0][4] = 1; expectedLabels[0][5] = 0; expectedLabels[0][6] = 0;  expectedLabels[0][7] = 1;
 
     Layer<double> layer1(3, 3);
     Layer<double> layer2(3, 9);

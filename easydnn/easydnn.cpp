@@ -29,10 +29,9 @@ class Neuron {
     //friend NeuralNetwork<Layer<T>, T>;
 
 public:
-    T* bias;    // bias of each neuron
 
     Neuron() = delete;
-    explicit Neuron(const int len) : len(len), array(nullptr), bias(nullptr) {
+    explicit Neuron(const int len) : len(len), array(nullptr) {
         try {
             array = new T[len]();
             //std::cout << "A new Neuron hase been created... " << this << std::endl;
@@ -270,6 +269,8 @@ class Layer {
     friend NeuralNetwork<Layer<T>, T>;
 
 public:
+    T bias;    // bias of each layer
+
     using element_type = typename std::remove_reference< decltype(std::declval<T>) >::type;
 
     Neuron<T> outputs;
@@ -278,10 +279,11 @@ public:
 
     Layer(const int numsOfWeights,
         const int numsOfPerceptrons) :
-        rows(numsOfWeights), // for bias +1
+        rows(numsOfWeights),
         cols(numsOfPerceptrons),
         weights(rows, cols),
-        outputs(numsOfPerceptrons) {
+        outputs(cols),
+        bias(static_cast<T>(1)) {
         for (int i = 0, j; i < cols; ++i) {
             for (j = 0; j < rows; ++j) {
                 weights[i][j] = static_cast<int>(rand() % 2) ? static_cast<T>(rand()) / RAND_MAX : static_cast<T>(rand()) / -RAND_MAX;
@@ -320,23 +322,22 @@ private:
 
 template<typename T>
 Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors, const Neuron<T>& input, const T& learning_rate) {
-    Neuron<T> gradients_layer(outputs.len);
-    Neuron<T> weights_delta_layer(outputs.len);
-    Neuron<T> unitVector(outputs.len);
+    Neuron<T> derOfSigmoid(outputs.len);
+    Neuron<T> gamma(outputs.len);
 
-    gradients_layer = outputs*(unitVector - outputs);
-    weights_delta_layer = errors * gradients_layer;
+    derOfSigmoid = outputs - outputs*outputs;
+    gamma = errors * derOfSigmoid;
 
     Matrix<T> in(input.len, 1);
-    Matrix<T> wdl(1, weights_delta_layer.len);
+    Matrix<T> wdl(1, gamma.len);
     //Matrix<T> gradients(in.rows, wdl.cols);
     
     in[0] = input;
-    for(int i=0; i< weights_delta_layer.len; ++i) wdl[i][0] = weights_delta_layer[i];
+    for(int i=0; i< gamma.len; ++i) wdl[i][0] = gamma[i];
     //gradients = in * wdl;
 
     weights -= in * wdl * learning_rate;
-    return weights_delta_layer;
+    return gamma;
 }
 
 template<typename T>
@@ -348,7 +349,7 @@ void Layer<T>::FeedForward(const Neuron<T>& input) {
 template<typename T>
 void Layer<T>::sigmoid_mapper() {
     for (int i = 0; i < outputs.len; ++i) {
-        outputs[i] = Sigmoid(outputs[i]);
+        outputs[i] = Sigmoid(outputs[i] + bias);
     }
 }
 
@@ -453,8 +454,8 @@ void NeuralNetwork<U, T>::BackPropagation(const Neuron<T>& input, const Neuron<T
 
         current = current->pPreviousDomain;
 
-        //pLayer->PrintLayer();
-        //std::cout << std::endl;
+        pLayer->PrintLayer();
+        std::cout << std::endl;
     }
 };
 
@@ -472,7 +473,7 @@ void NeuralNetwork<U, T>::FeedForward(const Neuron<T>& input) const {
         pInput = &pLayer->outputs;
         current = current->pNextDomain;
         
-        //layer->PrintOutputs(); 
+        //pLayer->PrintOutputs();
         //std::cout << std::endl;
         //pLayer->PrintLayer();
         //std::cout << std::endl;
@@ -481,8 +482,8 @@ void NeuralNetwork<U, T>::FeedForward(const Neuron<T>& input) const {
 
 template<class U, typename T>
 void NeuralNetwork<U, T>::loadDataSet(const Matrix<T>& inputs, const Matrix<T> & labels) const {
-    Neuron<T> input(inputs.cols); // for bias +1
-    Neuron<T> label(labels.cols);
+    Neuron<T> input(inputs.cols);
+    Neuron<T> label(labels.rows);
 
     for (int j = 0; j < inputs.rows; ++j)
     {
@@ -490,9 +491,8 @@ void NeuralNetwork<U, T>::loadDataSet(const Matrix<T>& inputs, const Matrix<T> &
             //std::cout << inputs[i][j] << " ";
             input[i] = inputs[i][j];
         }
-        //input[inputs.cols] = static_cast<T>(1);
 
-        label[0] = labels[0][j];
+        label[0] = labels[j][0];
         std::cout << "Row is..........: " << j << "  Label is:  " << label[0] << std::endl;
 
         FeedForward(input);
@@ -550,9 +550,9 @@ int main()
     inputs[0][7] = 1; inputs[1][7] = 1; inputs[2][7] = 1;
 
 
-    const Matrix<double> expectedLabels(8, 1);
-    expectedLabels[0][0] = 0; expectedLabels[0][1] = 1; expectedLabels[0][2] = 1;  expectedLabels[0][3] = 0;
-    expectedLabels[0][4] = 1; expectedLabels[0][5] = 0; expectedLabels[0][6] = 0;  expectedLabels[0][7] = 1;
+    const Matrix<double> expectedLabels(1, 8);
+    expectedLabels[0][0] = 0; expectedLabels[1][0] = 1; expectedLabels[2][0] = 1;  expectedLabels[3][0] = 0;
+    expectedLabels[4][0] = 1; expectedLabels[5][0] = 0; expectedLabels[6][0] = 0;  expectedLabels[7][0] = 1;
 
     Layer<double> layer1(3, 3);
     Layer<double> layer2(3, 9);

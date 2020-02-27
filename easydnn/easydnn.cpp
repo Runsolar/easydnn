@@ -14,6 +14,7 @@ template<typename T> class Layer;
 template<class U, typename T> class NeuralNetwork;
 
 #define DEFAULT_LEARNINGRATE 0.4
+//#define DEFAULT_BIASLEARNINGRATE 0.03
 
 template<typename T>
 T Sigmoid(const T& x)
@@ -45,7 +46,7 @@ public:
     Neuron(const Neuron<T>& vec): Neuron(vec.len) {
         if (this == &vec) return;
         for (int i = 0; i < len; ++i) {
-            array[i] = vec.array[i];
+            array[i] = vec[i];
         }
     }
 
@@ -78,7 +79,7 @@ const T Neuron<T>::dot(const Neuron<T>& neuron) const {
     T sum = 0;
     if (len == neuron.len) {
         for (int i = 0; i < len; ++i) {
-            sum += array[i] * neuron.array[i];
+            sum += array[i] * neuron[i];
         }
     }
     return sum;
@@ -97,7 +98,7 @@ template<typename T>
 const Neuron<T> Neuron<T>::operator*(const Neuron<T>& neuron) const {
     Neuron<T> vec(neuron.len);
     for (int i = 0; i < len; ++i) {
-        vec[i] = array[i] * neuron.array[i];
+        vec[i] = array[i] * neuron[i];
     }
     return vec;
 }
@@ -114,7 +115,7 @@ const Neuron<T>& Neuron<T>::operator-=(const Neuron<T>& neuron) const {
     //this += Neuron * (-1);
     if (len == neuron.len) {
         for (int i = 0; i < len; ++i) {
-            array[i] -= neuron.array[i];
+            array[i] -= neuron[i];
         }
     }
     return *this;
@@ -125,7 +126,7 @@ Neuron<T>& Neuron<T>::operator=(const Neuron<T>& neuron) {
     if (this == &neuron) return *this;
     if (len == neuron.len) {
         for (int i = 0; i < len; ++i) {
-            array[i] = neuron.array[i];
+            array[i] = neuron[i];
         }
     }
     else {
@@ -133,7 +134,7 @@ Neuron<T>& Neuron<T>::operator=(const Neuron<T>& neuron) {
         if(array != nullptr) delete[] array;
         array = new T[len]();
         for (int i = 0; i < len; ++i) {
-            array[i] = neuron.array[i];
+            array[i] = neuron[i];
         }
     }
     return *this;
@@ -244,7 +245,6 @@ public:
                 }
             }
         }
-
         return *this;
     }
 
@@ -322,11 +322,12 @@ private:
 
 template<typename T>
 Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors, const Neuron<T>& input, const T& learning_rate) {
-    Neuron<T> derOfSigmoid(outputs.len);
+    T bias_Delta = static_cast<T>(1);
+    //Neuron<T> derOfSigmoid(outputs.len);
     Neuron<T> gamma(outputs.len);
 
-    derOfSigmoid = outputs - outputs*outputs;
-    gamma = errors * derOfSigmoid;
+    //derOfSigmoid = outputs - outputs*outputs;
+    gamma = errors * (outputs - outputs * outputs);
 
     Matrix<T> in(input.len, 1);
     Matrix<T> wdl(1, gamma.len);
@@ -337,6 +338,12 @@ Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors, const Neuron<T>& in
     //gradients = in * wdl;
 
     weights -= in * wdl * learning_rate;
+
+    for (int i = 0; i < gamma.len; ++i) {
+        bias_Delta *= gamma[i];
+    }
+    bias -= bias_Delta * learning_rate;
+
     return gamma;
 }
 

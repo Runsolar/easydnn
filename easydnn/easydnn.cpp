@@ -16,10 +16,18 @@ template<class U, typename T> class NeuralNetwork;
 #define DEFAULT_LEARNINGRATE 0.4
 //#define DEFAULT_BIASLEARNINGRATE 0.03
 
+enum class Activation { SIGMOID = 1, SOFTMAX, RELU };
+
 template<typename T>
 inline T Sigmoid(const T& x)
 {
     return 1 / (1 + exp(-x));
+}
+
+template<typename T>
+inline T Relu(const T& x)
+{
+    return (x < 0)? 0 : x;
 }
 
 template<typename T>
@@ -70,6 +78,8 @@ public:
 private:
     unsigned len;
     T* array;
+
+    const Neuron<T> reluDerivativeFunc() const;
 };
 
 
@@ -83,6 +93,16 @@ const T Neuron<T>::dot(const Neuron<T>& neuron) const {
     }
     return sum;
 }
+
+template <typename T>
+const Neuron<T> Neuron<T>::reluDerivativeFunc() const {
+    Neuron<T> vec(this->len);
+    for (unsigned i = 0; i < vec.len; ++i) {
+        vec[i] = (this->array[i] < static_cast<T>(0)) ? static_cast<T>(0) : this->array[i];
+    }
+    return vec;
+}
+
 
 template<typename T>
 const Neuron<T> Neuron<T>::operator*(const Matrix<T>& matrix) const {
@@ -262,7 +282,6 @@ private:
 };
 
 
-
 template<typename T>
 class Layer {
     friend NeuralNetwork<Layer<T>, T>;
@@ -273,13 +292,15 @@ public:
     using element_type = typename std::remove_reference< decltype(std::declval<T>) >::type;
 
     Neuron<T> outputs;
+    Activation transferFunction;
 
-    enum activation { SOFTMAX, SIGMOID, RELU };
+    //enum activations { SIGMOID = 1, SOFTMAX, RELU } transferFunction;
 
     Layer(const unsigned numsOfWeights,
-        const unsigned numsOfPerceptrons) :
+        const unsigned numsOfPerceptrons, Activation transferFunction) :
         rows(numsOfWeights),
         cols(numsOfPerceptrons),
+        transferFunction(transferFunction),
         weights(rows, cols),
         outputs(cols),
         bias(static_cast<T>(1)) {
@@ -316,6 +337,7 @@ private:
     const unsigned rows;
     Matrix<T> weights;
 
+    //const 
     void activation_mapper();
 };
 
@@ -326,7 +348,19 @@ Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors, const Neuron<T>& in
     Neuron<T> gamma(outputs.len);
 
     //derOfSigmoid = outputs - outputs*outputs;
-    gamma = errors * (outputs - outputs * outputs);
+    switch (transferFunction) {
+    case Activation::SIGMOID:
+        gamma = errors * (outputs - outputs * outputs);
+        break;
+    case Activation::SOFTMAX:
+        break;
+    case Activation::RELU:
+        gamma = errors *  outputs.reluDerivativeFunc();
+        break;
+    default:
+        gamma = errors * (outputs - outputs * outputs);
+        break;
+    }
 
     Matrix<T> in(input.len, 1);
     Matrix<T> wdl(1, gamma.len);
@@ -355,10 +389,23 @@ void Layer<T>::FeedForward(const Neuron<T>& input) {
 template<typename T>
 void Layer<T>::activation_mapper() {
     for (unsigned i = 0; i < outputs.len; ++i) {
-        outputs[i] = Sigmoid(outputs[i] + bias);
+
+        switch (transferFunction) {
+        case Activation::SIGMOID:
+            outputs[i] = Sigmoid(outputs[i] + bias);
+            break;
+        case Activation::SOFTMAX:
+            break;
+        case Activation::RELU:
+            outputs[i] = Relu(outputs[i] + bias);
+            break;
+        default:
+            outputs[i] = Sigmoid(outputs[i] + bias);
+            break;
+        }
+
     }
 }
-
 
 
 template<class U, typename T>
@@ -560,10 +607,10 @@ unsigned main()
     expectedLabels[0][0] = 0; expectedLabels[1][0] = 1; expectedLabels[2][0] = 1;  expectedLabels[3][0] = 0;
     expectedLabels[4][0] = 1; expectedLabels[5][0] = 0; expectedLabels[6][0] = 0;  expectedLabels[7][0] = 1;
 
-    Layer<double> layer1(3, 3);
-    Layer<double> layer2(3, 9);
-    Layer<double> layer3(9, 9);
-    Layer<double> layer4(9, 1);
+    Layer<double> layer1(3, 3, Activation::SIGMOID);
+    Layer<double> layer2(3, 9, Activation::SIGMOID);
+    Layer<double> layer3(9, 9, Activation::SIGMOID);
+    Layer<double> layer4(9, 1, Activation::SIGMOID);
 
     NeuralNetwork<Layer<double>, double> NeuralNetwork(0.1);
     NeuralNetwork.pushLayer(layer1);

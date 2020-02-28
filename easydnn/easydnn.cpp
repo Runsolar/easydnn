@@ -98,7 +98,7 @@ template <typename T>
 const Neuron<T> Neuron<T>::reluDerivativeFunc() const {
     Neuron<T> vec(this->len);
     for (unsigned i = 0; i < vec.len; ++i) {
-        vec[i] = (this->array[i] < static_cast<T>(0)) ? static_cast<T>(0) : this->array[i];
+        vec[i] = (this->array[i] < static_cast<T>(0)) ? static_cast<T>(0) : 1;
     }
     return vec;
 }
@@ -607,9 +607,9 @@ unsigned main()
     expectedLabels[0][0] = 0; expectedLabels[1][0] = 1; expectedLabels[2][0] = 1;  expectedLabels[3][0] = 0;
     expectedLabels[4][0] = 1; expectedLabels[5][0] = 0; expectedLabels[6][0] = 0;  expectedLabels[7][0] = 1;
 
-    Layer<double> layer1(3, 3, Activation::SIGMOID);
-    Layer<double> layer2(3, 9, Activation::SIGMOID);
-    Layer<double> layer3(9, 9, Activation::SIGMOID);
+    Layer<double> layer1(3, 3, Activation::RELU);
+    Layer<double> layer2(3, 9, Activation::RELU);
+    Layer<double> layer3(9, 9, Activation::RELU);
     Layer<double> layer4(9, 1, Activation::SIGMOID);
 
     NeuralNetwork<Layer<double>, double> NeuralNetwork(0.1);

@@ -358,7 +358,7 @@ Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors, const Neuron<T>& in
         gamma = errors *  outputs.reluDerivativeFunc();
         break;
     default:
-        gamma = errors * (outputs - outputs * outputs);
+        gamma = errors * outputs;
         break;
     }
 
@@ -400,7 +400,7 @@ void Layer<T>::activation_mapper() {
             outputs[i] = Relu(outputs[i] + bias);
             break;
         default:
-            outputs[i] = Sigmoid(outputs[i] + bias);
+            outputs[i] = outputs[i];
             break;
         }
 

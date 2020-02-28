@@ -17,11 +17,10 @@ template<class U, typename T> class NeuralNetwork;
 //#define DEFAULT_BIASLEARNINGRATE 0.03
 
 template<typename T>
-T Sigmoid(const T& x)
+inline T Sigmoid(const T& x)
 {
     return 1 / (1 + exp(-x));
 }
-
 
 template<typename T>
 class Neuron {
@@ -32,7 +31,7 @@ class Neuron {
 public:
 
     Neuron() = delete;
-    explicit Neuron(const int len) : len(len), array(nullptr) {
+    explicit Neuron(const unsigned len) : len(len), array(nullptr) {
         try {
             array = new T[len]();
             //std::cout << "A new Neuron hase been created... " << this << std::endl;
@@ -45,7 +44,7 @@ public:
 
     Neuron(const Neuron<T>& vec): Neuron(vec.len) {
         if (this == &vec) return;
-        for (int i = 0; i < len; ++i) {
+        for (unsigned i = 0; i < len; ++i) {
             array[i] = vec[i];
         }
     }
@@ -55,7 +54,7 @@ public:
         //std::cout << "A Neuron hase been deleted... " << this << std::endl;
     }
 
-    T& operator[](const int index) const {
+    inline T& operator[](const unsigned index) const {
         return array[index];
     }
 
@@ -69,7 +68,7 @@ public:
     Neuron<T>& operator=(const Neuron<T>& neuron);
 
 private:
-    int len;
+    unsigned len;
     T* array;
 };
 
@@ -78,7 +77,7 @@ template<typename T>
 const T Neuron<T>::dot(const Neuron<T>& neuron) const {
     T sum = 0;
     if (len == neuron.len) {
-        for (int i = 0; i < len; ++i) {
+        for (unsigned i = 0; i < len; ++i) {
             sum += array[i] * neuron[i];
         }
     }
@@ -88,7 +87,7 @@ const T Neuron<T>::dot(const Neuron<T>& neuron) const {
 template<typename T>
 const Neuron<T> Neuron<T>::operator*(const Matrix<T>& matrix) const {
     Neuron<T> vec(matrix.cols);
-    for (int i = 0; i < matrix.cols; ++i) {
+    for (unsigned i = 0; i < matrix.cols; ++i) {
         vec[i] = dot(matrix[i]);
     }
     return vec;
@@ -97,7 +96,7 @@ const Neuron<T> Neuron<T>::operator*(const Matrix<T>& matrix) const {
 template<typename T>
 const Neuron<T> Neuron<T>::operator*(const Neuron<T>& neuron) const {
     Neuron<T> vec(neuron.len);
-    for (int i = 0; i < len; ++i) {
+    for (unsigned i = 0; i < len; ++i) {
         vec[i] = array[i] * neuron[i];
     }
     return vec;
@@ -114,7 +113,7 @@ template<typename T>
 const Neuron<T>& Neuron<T>::operator-=(const Neuron<T>& neuron) const {
     //this += Neuron * (-1);
     if (len == neuron.len) {
-        for (int i = 0; i < len; ++i) {
+        for (unsigned i = 0; i < len; ++i) {
             array[i] -= neuron[i];
         }
     }
@@ -125,7 +124,7 @@ template<typename T>
 Neuron<T>& Neuron<T>::operator=(const Neuron<T>& neuron) {
     if (this == &neuron) return *this;
     if (len == neuron.len) {
-        for (int i = 0; i < len; ++i) {
+        for (unsigned i = 0; i < len; ++i) {
             array[i] = neuron[i];
         }
     }
@@ -133,7 +132,7 @@ Neuron<T>& Neuron<T>::operator=(const Neuron<T>& neuron) {
         len = neuron.len;
         if(array != nullptr) delete[] array;
         array = new T[len]();
-        for (int i = 0; i < len; ++i) {
+        for (unsigned i = 0; i < len; ++i) {
             array[i] = neuron[i];
         }
     }
@@ -151,9 +150,9 @@ class Matrix {
 public:
     Matrix() = delete;
 
-    explicit Matrix(const int rows, const int cols) : rows(rows), cols(cols) {
+    explicit Matrix(const unsigned rows, const unsigned cols) : rows(rows), cols(cols) {
         matrix = new Neuron<T> * [cols];
-        for (int i = 0; i < cols; ++i) {
+        for (unsigned i = 0; i < cols; ++i) {
             matrix[i] = new Neuron<T>(rows);
         }
 
@@ -161,27 +160,27 @@ public:
     }
 
     Matrix(const Matrix<T>& matrixObj): Matrix(matrixObj.rows, matrixObj.cols) {
-        for (int i = 0, j; i < cols; ++i) {
+        for (unsigned i = 0, j; i < cols; ++i) {
             Neuron<T>& col = *matrix[i];
             for (j = 0; j < rows; j++) {
                 col[j] = matrixObj[i][j];
             }
         }
     }
-
-    T& at(const int i, const int j) {
+/*
+    T& at(const unsigned i, const unsigned j) {
         Neuron<T>& Col = *matrix[i];
         return Col[j];
     }
-
-    Neuron<T>& operator[](const int index) const {
+*/
+    inline Neuron<T>& operator[](const unsigned index) const {
         return *matrix[index];
     }
 
     Matrix<T> operator*(const T& scalar) {
         Matrix<T> res(rows, cols);
 
-        for (int j = 0, i; j < rows; ++j) {
+        for (unsigned j = 0, i; j < rows; ++j) {
             for (i = 0; i < cols; ++i) {
                 res[i][j] = (*matrix[i])[j] * scalar;
             }
@@ -193,7 +192,7 @@ public:
     Neuron<T> operator*(const Neuron<T>& vec) {
         Neuron<T> res(rows);
 
-        for (int j = 0, i; j < rows; ++j) {
+        for (unsigned j = 0, i; j < rows; ++j) {
             res[j] = 0;
             for (i = 0; i < cols; ++i) {
                 res[j] += (*matrix[i])[j] * vec[i];
@@ -206,7 +205,7 @@ public:
     Matrix<T> operator*(const Matrix<T>& m) {
         Matrix<T> res(rows, m.cols);
 
-        for (int j = 0, i, k; j < rows; ++j) {
+        for (unsigned j = 0, i, k; j < rows; ++j) {
             for (i = 0; i < m.cols; ++i) {
                 res[i][j] = 0;
                 for (k = 0; k < cols; ++k) {
@@ -219,7 +218,7 @@ public:
     }
 
     Matrix<T>& operator-=(const Matrix<T>& m) {
-        for (int j = 0, i; j < rows; ++j) {
+        for (unsigned j = 0, i; j < rows; ++j) {
             for (i = 0; i < cols; ++i) {
                 (*matrix[i])[j] -= m[i][j];
             }
@@ -238,7 +237,7 @@ public:
 
     Matrix<T>& operator=(const Matrix<T>& matrixObj) {
         if (cols == matrixObj.cols && rows == matrixObj.rows) {
-            for (int i = 0, j; i < cols; ++i) {
+            for (unsigned i = 0, j; i < cols; ++i) {
                 Neuron<T>& col = *matrix[i];
                 for (j = 0; j < rows; j++) {
                     col[j] = matrixObj[i][j];
@@ -249,7 +248,7 @@ public:
     }
 
     ~Matrix() {
-        for (int i = 0; i < cols; ++i) {
+        for (unsigned i = 0; i < cols; ++i) {
             delete matrix[i];
         }
         delete[] matrix;
@@ -257,8 +256,8 @@ public:
     }
 
 private:
-    const int cols;
-    const int rows;
+    const unsigned cols;
+    const unsigned rows;
     Neuron<T>** matrix;
 };
 
@@ -277,24 +276,24 @@ public:
 
     enum activation { SOFTMAX, SIGMOID, RELU };
 
-    Layer(const int numsOfWeights,
-        const int numsOfPerceptrons) :
+    Layer(const unsigned numsOfWeights,
+        const unsigned numsOfPerceptrons) :
         rows(numsOfWeights),
         cols(numsOfPerceptrons),
         weights(rows, cols),
         outputs(cols),
         bias(static_cast<T>(1)) {
-        for (int i = 0, j; i < cols; ++i) {
+        for (unsigned i = 0, j; i < cols; ++i) {
             for (j = 0; j < rows; ++j) {
-                weights[i][j] = static_cast<int>(rand() % 2) ? static_cast<T>(rand()) / RAND_MAX : static_cast<T>(rand()) / -RAND_MAX;
+                weights[i][j] = static_cast<unsigned>(rand() % 2) ? static_cast<T>(rand()) / RAND_MAX : static_cast<T>(rand()) / -RAND_MAX;
             }
         }
     }
 
     ~Layer() {}
 
-    void PrintLayer() const {
-        for (int j = 0, i; j < rows; ++j) {
+    void PrunsignedLayer() const {
+        for (unsigned j = 0, i; j < rows; ++j) {
             for (i = 0; i < cols; ++i) {
                 std::cout << static_cast<T>(weights[i][j]) << "   ";
             }
@@ -303,8 +302,8 @@ public:
         std::cout << std::endl;
     }
 
-    void PrintOutputs() const {
-        for (int i = 0; i < outputs.len; ++i) {
+    void PrunsignedOutputs() const {
+        for (unsigned i = 0; i < outputs.len; ++i) {
             std::cout << outputs[i] << std::endl;
         }
     }
@@ -313,11 +312,11 @@ public:
     void FeedForward(const Neuron<T>&);
 
 private:
-    const int cols;
-    const int rows;
+    const unsigned cols;
+    const unsigned rows;
     Matrix<T> weights;
 
-    void sigmoid_mapper();
+    void activation_mapper();
 };
 
 template<typename T>
@@ -334,12 +333,12 @@ Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors, const Neuron<T>& in
     //Matrix<T> gradients(in.rows, wdl.cols);
     
     in[0] = input;
-    for(int i=0; i< gamma.len; ++i) wdl[i][0] = gamma[i];
+    for(unsigned i=0; i< gamma.len; ++i) wdl[i][0] = gamma[i];
     //gradients = in * wdl;
 
     weights -= in * wdl * learning_rate;
 
-    for (int i = 0; i < gamma.len; ++i) {
+    for (unsigned i = 0; i < gamma.len; ++i) {
         bias_Delta *= gamma[i];
     }
     bias -= bias_Delta * learning_rate;
@@ -350,12 +349,12 @@ Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors, const Neuron<T>& in
 template<typename T>
 void Layer<T>::FeedForward(const Neuron<T>& input) {
     outputs = input * weights;
-    sigmoid_mapper();
+    activation_mapper();
 }
 
 template<typename T>
-void Layer<T>::sigmoid_mapper() {
-    for (int i = 0; i < outputs.len; ++i) {
+void Layer<T>::activation_mapper() {
+    for (unsigned i = 0; i < outputs.len; ++i) {
         outputs[i] = Sigmoid(outputs[i] + bias);
     }
 }
@@ -461,7 +460,7 @@ void NeuralNetwork<U, T>::BackPropagation(const Neuron<T>& input, const Neuron<T
 
         current = current->pPreviousDomain;
 
-        pLayer->PrintLayer();
+        pLayer->PrunsignedLayer();
         std::cout << std::endl;
     }
 };
@@ -480,9 +479,9 @@ void NeuralNetwork<U, T>::FeedForward(const Neuron<T>& input) const {
         pInput = &pLayer->outputs;
         current = current->pNextDomain;
         
-        //pLayer->PrintOutputs();
+        //pLayer->PrunsignedOutputs();
         //std::cout << std::endl;
-        //pLayer->PrintLayer();
+        //pLayer->PrunsignedLayer();
         //std::cout << std::endl;
     }
 }
@@ -492,9 +491,9 @@ void NeuralNetwork<U, T>::loadDataSet(const Matrix<T>& inputs, const Matrix<T> &
     Neuron<T> input(inputs.cols);
     Neuron<T> label(labels.rows);
 
-    for (int j = 0; j < inputs.rows; ++j)
+    for (unsigned j = 0; j < inputs.rows; ++j)
     {
-        for (int i = 0; i < inputs.cols; ++i) {
+        for (unsigned i = 0; i < inputs.cols; ++i) {
             //std::cout << inputs[i][j] << " ";
             input[i] = inputs[i][j];
         }
@@ -517,7 +516,7 @@ void NeuralNetwork<U, T>::Train(){
 template <typename T>
 struct DataSet {
 public:
-    DataSet(const int rows, const int cols): data(cols, rows), labels(cols, rows) {
+    DataSet(const unsigned rows, const unsigned cols): data(cols, rows), labels(cols, rows) {
 
     };
 private:
@@ -526,7 +525,7 @@ private:
 };
 
 
-int main()
+unsigned main()
 {
 
     const double _inputs[8][3] = {

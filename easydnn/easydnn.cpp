@@ -7,34 +7,34 @@ Code by St. Spirit and Danijar Wolf, Feb 20, 2020.
 #include <iostream>
 #include<ctime>
 
+#define DEFAULT_LEARNINGRATE 0.4
+//#define DEFAULT_BIASLEARNINGRATE 0.03
 
+
+enum class Activation { SIGMOID, SOFTMAX, RELU };
 template<typename T> class Neuron;
 template<typename T> class Matrix;
 template<typename T> class Layer;
 template<class U, typename T> class NeuralNetwork;
 
-#define DEFAULT_LEARNINGRATE 0.4
-//#define DEFAULT_BIASLEARNINGRATE 0.03
-
-enum class Activation { SIGMOID = 1, SOFTMAX, RELU };
-
 template<typename T>
-inline T Sigmoid(const T& x)
+inline const T Sigmoid(const T& x)
 {
     return 1 / (1 + exp(-x));
 }
 
 template<typename T>
-inline T Relu(const T& x)
+inline const T Relu(const T& x)
 {
     return (x < 0)? 0 : x;
 }
+
 
 template<typename T>
 class Neuron {
     friend Layer<T>;
     //friend const Neuron<T> operator-(const Neuron<T>& x, const Neuron<T>& y);
-    //friend NeuralNetwork<Layer<T>, T>;
+    friend NeuralNetwork<Layer<T>, T>;
 
 public:
 
@@ -102,7 +102,6 @@ const Neuron<T> Neuron<T>::reluDerivativeFunc() const {
     }
     return vec;
 }
-
 
 template<typename T>
 const Neuron<T> Neuron<T>::operator*(const Matrix<T>& matrix) const {
@@ -412,6 +411,7 @@ template<class U, typename T>
 class NeuralNetwork {
 public:
     T learning_rate;
+    T m_error;
     using element_type = typename std::remove_reference< decltype(std::declval<U>()) >::type;
 
     explicit NeuralNetwork() : head(nullptr), tail(nullptr), learning_rate(DEFAULT_LEARNINGRATE) {
@@ -484,9 +484,20 @@ void NeuralNetwork<U, T>::BackPropagation(const Neuron<T>& input, const Neuron<T
     Domain<U>* current = tail;
     Neuron<T> errors(label);
     const Neuron<T>* pInput;
-    
     U* pLayer;
     U* pPreviousLayer;
+
+    pLayer = &current->layer;
+    T m_error = static_cast<T>(0);
+    T delta_err = static_cast<T>(0);
+
+    for (unsigned i = 0; i < (pLayer->outputs).len; ++i) {
+        delta_err = pLayer->outputs[i] - label[i];
+        m_error += delta_err * delta_err;
+    }
+    m_error = m_error / ((pLayer->outputs).len - 1);
+    m_error = static_cast<T>(sqrt(m_error));
+
     while (current != nullptr) {
 
         pLayer = &current->layer;

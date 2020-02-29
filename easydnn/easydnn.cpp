@@ -10,7 +10,7 @@ Code by St. Spirit and Danijar Wolf, Feb 20, 2020.
 #define DEFAULT_LEARNINGRATE 0.4
 //#define DEFAULT_BIASLEARNINGRATE 0.03
 
-
+template <typename T> struct DataSet;
 enum class Activation { SIGMOID, SOFTMAX, RELU };
 template<typename T> class Neuron;
 template<typename T> class Matrix;
@@ -39,6 +39,7 @@ class Neuron {
 public:
 
     Neuron() = delete;
+
     explicit Neuron(const unsigned len) : len(len), array(nullptr) {
         try {
             array = new T[len]();
@@ -157,7 +158,6 @@ Neuron<T>& Neuron<T>::operator=(const Neuron<T>& neuron) {
     }
     return *this;
 }
-
 
 
 template<typename T>
@@ -288,7 +288,7 @@ class Layer {
 public:
     T bias;    // bias of each layer
 
-    using element_type = typename std::remove_reference< decltype(std::declval<T>) >::type;
+    //using element_type = typename std::remove_reference< decltype(std::declval<T>) >::type;
 
     Neuron<T> outputs;
     Activation transferFunction;
@@ -412,25 +412,32 @@ class NeuralNetwork {
 public:
     T learning_rate;
     T m_error;
+    Neuron<T> result;
+
     using element_type = typename std::remove_reference< decltype(std::declval<U>()) >::type;
 
     explicit NeuralNetwork() : head(nullptr), tail(nullptr), learning_rate(DEFAULT_LEARNINGRATE) {
         std::cout << "The NeuralNetwork has been created" << this << std::endl;
     }
 
-    explicit NeuralNetwork(const T learning_rate) : head(nullptr), tail(nullptr), learning_rate(learning_rate) {
+    explicit NeuralNetwork(const T learning_rate) : head(nullptr), tail(nullptr), 
+        learning_rate(learning_rate), 
+        m_error(static_cast<T>(0)), 
+        result(0), 
+        pDataSet(nullptr){
         std::cout << "The NeuralNetwork has been created" << this << std::endl;
     }
 
     ~NeuralNetwork();
 
     void pushLayer(U& layerObj);
-    void loadDataSet(const Matrix<T>& inputs, const Matrix<T>& labels) const;
-    void Train();
+    void mountDataSet(const DataSet<T>& dataset);
+    void Train() const;
 
 private:
     void BackPropagation(const Neuron<T>& input, const Neuron<T>& label) const;
     void FeedForward(const Neuron<T>& input) const;
+    void getResult() const;
 
     template<class U>
     class Domain {
@@ -445,6 +452,7 @@ private:
     };
     Domain<U>* head;
     Domain<U>* tail;
+    const DataSet<T>* pDataSet;
 };
 
 template<class U, typename T>
@@ -501,7 +509,6 @@ void NeuralNetwork<U, T>::BackPropagation(const Neuron<T>& input, const Neuron<T
     while (current != nullptr) {
 
         pLayer = &current->layer;
-
         if (current->pNextDomain == nullptr) {
             errors = pLayer->outputs - label;
         }
@@ -515,11 +522,10 @@ void NeuralNetwork<U, T>::BackPropagation(const Neuron<T>& input, const Neuron<T
 
         errors = pLayer->BackPropagation(errors, *pInput, learning_rate);
         errors = pLayer->weights * errors;
-
         current = current->pPreviousDomain;
 
-        pLayer->PrunsignedLayer();
-        std::cout << std::endl;
+        //pLayer->PrunsignedLayer();
+        //std::cout << std::endl;
     }
 };
 
@@ -545,41 +551,51 @@ void NeuralNetwork<U, T>::FeedForward(const Neuron<T>& input) const {
 }
 
 template<class U, typename T>
-void NeuralNetwork<U, T>::loadDataSet(const Matrix<T>& inputs, const Matrix<T> & labels) const {
-    Neuron<T> input(inputs.cols);
-    Neuron<T> label(labels.rows);
+void NeuralNetwork<U, T>::mountDataSet(const DataSet<T> &dataset) {
+    pDataSet =  &dataset;
+};
 
-    for (unsigned j = 0; j < inputs.rows; ++j)
+template<class U, typename T>
+void NeuralNetwork<U, T>::Train() const {
+
+    std::cout << &pDataSet->inputs.cols << std::endl;
+    std::cout << &pDataSet->labels.rows << std::endl;
+
+    Neuron<T> input(pDataSet->inputs.cols);
+    Neuron<T> label(pDataSet->labels.rows);
+
+    for (unsigned j = 0; j < pDataSet->inputs.rows; ++j)
     {
-        for (unsigned i = 0; i < inputs.cols; ++i) {
+        for (unsigned i = 0; i < pDataSet->inputs.cols; ++i) {
             //std::cout << inputs[i][j] << " ";
-            input[i] = inputs[i][j];
+            input[i] = pDataSet->inputs[i][j];
         }
 
-        label[0] = labels[j][0];
-        std::cout << "Row is..........: " << j << "  Label is:  " << label[0] << std::endl;
+        //label[0] = pDataSet->labels[j][0];
+        for (unsigned i = 0; i < pDataSet->labels.rows; ++i) {
+            label[i] = pDataSet->labels[j][i];
+        }
+
+        //std::cout << "Row is..........: " << j << "  Label is:  " << label[0] << std::endl;
 
         FeedForward(input);
         BackPropagation(input, label);
     }
-   
-};
-
-template<class U, typename T>
-void NeuralNetwork<U, T>::Train(){
     //FeedForward(input);
 };
+
+template <typename U, typename T>
+void NeuralNetwork<U, T>::getResult() const {
+    U* pLayer = tail;
+    result = pLayer->outputs;
+}
 
 
 template <typename T>
 struct DataSet {
-public:
-    DataSet(const unsigned rows, const unsigned cols): data(cols, rows), labels(cols, rows) {
-
-    };
-private:
-    Matrix<double> data;
-    Matrix<double> labels;
+    DataSet(const Matrix<T>& inputs, const Matrix<T>& labels): inputs(inputs), labels(labels) {};
+    const Matrix<T>& inputs;
+    const Matrix<T>& labels;
 };
 
 
@@ -637,7 +653,9 @@ unsigned main()
 
     NeuralNetwork.FeedForward(input);
 */
-    NeuralNetwork.loadDataSet(inputs, expectedLabels);
+    DataSet<double> dataset(inputs, expectedLabels);
+    NeuralNetwork.mountDataSet(dataset);
+    NeuralNetwork.Train();
 
     //NeuralNetwork.pushLayer(layer0);
     //NeuralNetwork.pushLayer(Layer<double>(120, 64));

@@ -9,6 +9,7 @@ Code by St. Spirit and Danijar Wolf, Feb 20, 2020.
 
 #define DEFAULT_LEARNINGRATE 0.4
 //#define DEFAULT_BIASLEARNINGRATE 0.03
+//#define DEFAULT_MOMENTUM 0.1
 
 template <typename T> struct DataSet;
 enum class Activation { SIGMOID, SOFTMAX, RELU };
@@ -174,7 +175,6 @@ public:
         for (unsigned i = 0; i < cols; ++i) {
             matrix[i] = new Neuron<T>(rows);
         }
-
         //std::cout << "A new matrix has been created... " << this << std::endl;
     }
 
@@ -287,13 +287,9 @@ class Layer {
 
 public:
     T bias;    // bias of each layer
-
     //using element_type = typename std::remove_reference< decltype(std::declval<T>) >::type;
-
     Neuron<T> outputs;
     Activation transferFunction;
-
-    //enum activations { SIGMOID = 1, SOFTMAX, RELU } transferFunction;
 
     Layer(const unsigned numsOfWeights,
         const unsigned numsOfPerceptrons, Activation transferFunction) :
@@ -567,21 +563,16 @@ void NeuralNetwork<U, T>::Train() const {
     for (unsigned j = 0; j < pDataSet->inputs.rows; ++j)
     {
         for (unsigned i = 0; i < pDataSet->inputs.cols; ++i) {
-            //std::cout << inputs[i][j] << " ";
             input[i] = pDataSet->inputs[i][j];
         }
 
-        //label[0] = pDataSet->labels[j][0];
         for (unsigned i = 0; i < pDataSet->labels.rows; ++i) {
             label[i] = pDataSet->labels[j][i];
         }
 
-        //std::cout << "Row is..........: " << j << "  Label is:  " << label[0] << std::endl;
-
         FeedForward(input);
         BackPropagation(input, label);
     }
-    //FeedForward(input);
 };
 
 template <typename U, typename T>

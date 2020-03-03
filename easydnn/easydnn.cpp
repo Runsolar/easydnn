@@ -38,7 +38,7 @@ class Neuron {
     friend NeuralNetwork<Layer<T>, T>;
 
 public:
-
+    
     Neuron() = delete;
 
     explicit Neuron(const unsigned len) : len(len), array(nullptr) {
@@ -200,45 +200,9 @@ public:
         return *matrix[index];
     }
 
-    Matrix<T> operator*(const T& scalar) {
-        Matrix<T> res(rows, cols);
-
-        for (unsigned j = 0, i; j < rows; ++j) {
-            for (i = 0; i < cols; ++i) {
-                res[i][j] = (*matrix[i])[j] * scalar;
-            }
-        }
-
-        return res;
-    }
-
-    Neuron<T> operator*(const Neuron<T>& vec) {
-        Neuron<T> res(rows);
-
-        for (unsigned j = 0, i; j < rows; ++j) {
-            res[j] = 0;
-            for (i = 0; i < cols; ++i) {
-                res[j] += (*matrix[i])[j] * vec[i];
-            }
-        }
-
-        return res;
-    }
-
-    Matrix<T> operator*(const Matrix<T>& m) {
-        Matrix<T> res(rows, m.cols);
-
-        for (unsigned j = 0, i, k; j < rows; ++j) {
-            for (i = 0; i < m.cols; ++i) {
-                res[i][j] = 0;
-                for (k = 0; k < cols; ++k) {
-                    res[i][j] = res[i][j] + (*matrix[k])[j] * m[i][k];
-                }
-            }
-        }
-
-        return res;
-    }
+    const Matrix<T> operator*(const T& scalar) const;
+    const Neuron<T> operator*(const Neuron<T>& vec) const;
+    const Matrix<T> operator*(const Matrix<T>& m) const;
 
     Matrix<T>& operator-=(const Matrix<T>& m) {
         for (unsigned j = 0, i; j < rows; ++j) {
@@ -258,7 +222,7 @@ public:
         return res;
     }
 
-    Matrix<T>& operator=(const Matrix<T>& matrixObj) {
+    const Matrix<T>& operator=(const Matrix<T>& matrixObj) const {
         if (cols == matrixObj.cols && rows == matrixObj.rows) {
             for (unsigned i = 0, j; i < cols; ++i) {
                 Neuron<T>& col = *matrix[i];
@@ -286,6 +250,47 @@ private:
 
 
 template<typename T>
+const Matrix<T> Matrix<T>::operator*(const T& scalar) const {
+    Matrix<T> res(rows, cols);
+
+    for (unsigned j = 0, i; j < rows; ++j) {
+        for (i = 0; i < cols; ++i) {
+            res[i][j] = (*matrix[i])[j] * scalar;
+        }
+    }
+    return res;
+}
+
+template<typename T>
+const Neuron<T> Matrix<T>::operator*(const Neuron<T>& vec) const {
+    Neuron<T> res(rows);
+
+    for (unsigned j = 0, i; j < rows; ++j) {
+        res[j] = 0;
+        for (i = 0; i < cols; ++i) {
+            res[j] += (*matrix[i])[j] * vec[i];
+        }
+    }
+    return res;
+}
+
+template<typename T>
+const Matrix<T> Matrix<T>::operator*(const Matrix<T>& m) const {
+    Matrix<T> res(rows, m.cols);
+
+    for (unsigned j = 0, i, k; j < rows; ++j) {
+        for (i = 0; i < m.cols; ++i) {
+            res[i][j] = 0;
+            for (k = 0; k < cols; ++k) {
+                res[i][j] = res[i][j] + (*matrix[k])[j] * m[i][k];
+            }
+        }
+    }
+    return res;
+}
+
+
+template<typename T>
 class Layer {
     friend NeuralNetwork<Layer<T>, T>;
 
@@ -302,7 +307,7 @@ public:
         transferFunction(transferFunction),
         weights(rows, cols),
         outputs(cols),
-        bias(static_cast<T>(1)) {
+        bias(static_cast<T>(0)) {
         for (unsigned i = 0, j; i < cols; ++i) {
             for (j = 0; j < rows; ++j) {
                 weights[i][j] = static_cast<unsigned>(rand() % 2) ? static_cast<T>(rand()) / RAND_MAX : static_cast<T>(rand()) / -RAND_MAX;
@@ -363,18 +368,27 @@ Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors, const Neuron<T>& in
 
     Matrix<T> in(input.len, 1);
     Matrix<T> wdl(1, gamma.len);
-    //Matrix<T> gradients(in.rows, wdl.cols);
+//    Matrix<T> gradients(in.rows, wdl.cols);
     
     in[0] = input;
     for(unsigned i=0; i< gamma.len; ++i) wdl[i][0] = gamma[i];
-    //gradients = in * wdl;
-
+ /*   
+    gradients = in * wdl * learning_rate;
+    for (unsigned j = 0, i; j < rows; ++j) {
+        for (i = 0; i < cols; ++i) {
+            std::cout << static_cast<T>(gradients[i][j]) << "   ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+*/
     weights -= in * wdl * learning_rate;
-
+/*
     for (unsigned i = 0; i < gamma.len; ++i) {
         bias_Delta *= gamma[i];
     }
     bias -= bias_Delta * DEFAULT_BIASLEARNINGRATE;
+    */
     //bias -= bias_Delta * learning_rate;
 
     return gamma;
@@ -403,7 +417,6 @@ void Layer<T>::activation_mapper() {
             outputs[i] = outputs[i] + bias;
             break;
         }
-
     }
 }
 
@@ -502,7 +515,19 @@ void NeuralNetwork<U, T>::BackPropagation(const Neuron<T>& input, const Neuron<T
 
         pLayer = &current->layer;
         if (current->pNextDomain == nullptr) {
+
+            std::cout << "Input is equvals.............  ";
+            std::cout << label.array[0] << std::endl;
+            std::cout << std::endl;
+
+            std::cout << "Outputs is equvals.............  ";
+            std::cout << pLayer->outputs[0] << std::endl;
+            std::cout << std::endl;
+
             errors = pLayer->outputs - label;
+
+            std::cout << "Error is equvals.............  ";
+            std::cout << errors[0] << std::endl;
         }
         if (current->pPreviousDomain != nullptr) {
             pPreviousLayer = &current->pPreviousDomain->layer; 
@@ -510,6 +535,13 @@ void NeuralNetwork<U, T>::BackPropagation(const Neuron<T>& input, const Neuron<T
         }
         else {
             pInput = &input;
+/*
+            std::cout << "Last input is here............. " << std::endl;
+            for (unsigned i = 0; i < pInput->len; ++i) {
+                std::cout << pInput->array[i] << std::endl;
+            }
+            std::cout << std::endl;
+*/
         }
 
         errors = pLayer->BackPropagation(errors, *pInput, learning_rate);
@@ -574,25 +606,44 @@ void NeuralNetwork<U, T>::Train(const unsigned epochs) const {
                 label[i] = pDataSet->labels[j][i];
             }
 
-            FeedForward(input);
-            BackPropagation(input, label);
+            FeedForward(input);          
 
             m_error = static_cast<T>(0);
 
             for (unsigned i = 0; i < (pLayer->outputs).len; ++i) {
-                delta_err = pLayer->outputs[i] - label[i];
+                delta_err = label[i] - pLayer->outputs[i];
                 m_error += delta_err * delta_err;
             }
 
-            //m_error = m_error / ((pLayer->outputs).len);
             r = ((pLayer->outputs).len > 1) ? (pLayer->outputs).len - 1 : 1;
             m_error = m_error / r;
             m_error = static_cast<T>(sqrt(m_error));
 
+
             std::cout << "epoch is: " << epoch << std::endl;
             printf("error = %f\r\n", m_error);
 
+            BackPropagation(input, label);
         }
+    }
+
+
+    //Test
+    for (unsigned j = 0; j < pDataSet->inputs.rows; ++j)
+    {
+        for (unsigned i = 0; i < pDataSet->inputs.cols; ++i) {
+            input[i] = pDataSet->inputs[i][j];
+        }
+
+        for (unsigned i = 0; i < pDataSet->labels.rows; ++i) {
+            label[i] = pDataSet->labels[j][i];
+        }
+        FeedForward(input);
+
+        for (unsigned i = 0; i < (pLayer->outputs).len; ++i) {
+            std::cout << "Target is: "<< label[i] << " Output is: " << pLayer->outputs[i] << std::endl;
+        }
+
     }
 };
 
@@ -619,6 +670,41 @@ struct DataSet {
 unsigned main()
 {
 
+    const Matrix<double> m(3, 3);
+    Neuron<double> v(3);
+
+    m[0][0] = -3; m[1][0] = 4; m[2][0] = 1;
+    m[0][1] = 7; m[1][1] = -6; m[2][1] = 8;
+    m[0][2] = 9; m[1][2] = 3; m[2][2] = -8;
+
+    v[0] = 3; v[1] = 1; v[2] = 7;
+
+    Neuron<double> res(3);
+   
+    res = m*v;
+
+    for (unsigned i = 0; i < 3; ++i) {
+        std::cout << "Result " << res[i] << std::endl;
+    }
+
+    const Matrix<double> m1(3, 1);
+    const Matrix<double> m2(1, 3);
+    const Matrix<double> r(3, 3);
+
+    m1[0][0] = 1; m1[0][1] = 2; m1[0][2] = 3;
+    m2[0][0] = 1; m2[1][0] = 2; m2[2][0] = 3;
+
+    r = m1 * m2;
+
+    for (unsigned j = 0, i; j < 3; ++j) {
+        for (i = 0; i < 3; ++i) {
+            std::cout << r[i][j] << "   ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+
+    
     const double _inputs[8][3] = {
       {0, 0, 0}, //0
       {0, 0, 1}, //1
@@ -656,20 +742,12 @@ unsigned main()
     Layer<double> layer3(9, 9, Activation::SIGMOID);
     Layer<double> layer4(9, 1, Activation::SIGMOID);
 
-    NeuralNetwork<Layer<double>, double> NeuralNetwork(0.3);
+    NeuralNetwork<Layer<double>, double> NeuralNetwork(0.5);
     NeuralNetwork.pushLayer(layer1);
     NeuralNetwork.pushLayer(layer2);
     NeuralNetwork.pushLayer(layer3);
     NeuralNetwork.pushLayer(layer4);
 
-/*
-    Neuron<double> input(3);
-    input[0] = 0;
-    input[1] = 0;
-    input[2] = 0;
-
-    NeuralNetwork.FeedForward(input);
-*/
     DataSet<double> dataset(inputs, expectedLabels);
     NeuralNetwork.mountDataSet(dataset);
     NeuralNetwork.Train(100);

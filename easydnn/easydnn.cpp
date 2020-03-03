@@ -203,24 +203,8 @@ public:
     const Matrix<T> operator*(const T& scalar) const;
     const Neuron<T> operator*(const Neuron<T>& vec) const;
     const Matrix<T> operator*(const Matrix<T>& m) const;
-
-    Matrix<T>& operator-=(const Matrix<T>& m) {
-        for (unsigned j = 0, i; j < rows; ++j) {
-            for (i = 0; i < cols; ++i) {
-                (*matrix[i])[j] -= m[i][j];
-            }
-        }
-        return *this;
-    }
-
-    Matrix<T> operator-(const Matrix<T>& m) {
-        Matrix<T> res(rows, cols);
-        
-        res = *this;
-        res -= m;
-
-        return res;
-    }
+    const Matrix<T>& operator-=(const Matrix<T>& m) const;
+    const Matrix<T> operator-(const Matrix<T>& m) const;
 
     const Matrix<T>& operator=(const Matrix<T>& matrixObj) const {
         if (cols == matrixObj.cols && rows == matrixObj.rows) {
@@ -286,6 +270,26 @@ const Matrix<T> Matrix<T>::operator*(const Matrix<T>& m) const {
             }
         }
     }
+    return res;
+}
+
+template<typename T>
+const Matrix<T>& Matrix<T>::operator-=(const Matrix<T>& m) const {
+    for (unsigned j = 0, i; j < rows; ++j) {
+        for (i = 0; i < cols; ++i) {
+            (*matrix[i])[j] -= m[i][j];
+        }
+    }
+    return *this;
+}
+
+template<typename T>
+const Matrix<T> Matrix<T>::operator-(const Matrix<T>& m) const {
+    Matrix<T> res(rows, cols);
+
+    res = *this;
+    res -= m;
+
     return res;
 }
 
@@ -689,7 +693,10 @@ unsigned main()
 
     const Matrix<double> m1(3, 1);
     const Matrix<double> m2(1, 3);
+
+    const Matrix<double> m3(3, 3);
     const Matrix<double> r(3, 3);
+
 
     m1[0][0] = 1; m1[0][1] = 2; m1[0][2] = 3;
     m2[0][0] = 1; m2[1][0] = 2; m2[2][0] = 3;
@@ -704,7 +711,31 @@ unsigned main()
     }
     std::cout << std::endl;
 
-    
+    m3[0][0] = 1; m3[1][0] = 1; m3[2][0] = 1;
+    m3[0][1] = 1; m3[1][1] = 1; m3[2][1] = 1;
+    m3[0][2] = 1; m3[1][2] = 1; m3[2][2] = 1;
+
+
+    r = r - m3;
+
+    for (unsigned j = 0, i; j < 3; ++j) {
+        for (i = 0; i < 3; ++i) {
+            std::cout << r[i][j] << "   ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+
+    r = r * -1;
+
+    for (unsigned j = 0, i; j < 3; ++j) {
+        for (i = 0; i < 3; ++i) {
+            std::cout << r[i][j] << "   ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+
     const double _inputs[8][3] = {
       {0, 0, 0}, //0
       {0, 0, 1}, //1
@@ -748,9 +779,9 @@ unsigned main()
     NeuralNetwork.pushLayer(layer3);
     NeuralNetwork.pushLayer(layer4);
 
-    DataSet<double> dataset(inputs, expectedLabels);
-    NeuralNetwork.mountDataSet(dataset);
-    NeuralNetwork.Train(100);
+    //DataSet<double> dataset(inputs, expectedLabels);
+    //NeuralNetwork.mountDataSet(dataset);
+    //NeuralNetwork.Train(100);
 
 
     //NeuralNetwork.pushLayer(layer0);

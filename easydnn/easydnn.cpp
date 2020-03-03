@@ -726,7 +726,7 @@ unsigned main()
     }
     std::cout << std::endl;
 
-    r = r * -1;
+    r = r * -0.15;
 
     for (unsigned j = 0, i; j < 3; ++j) {
         for (i = 0; i < 3; ++i) {

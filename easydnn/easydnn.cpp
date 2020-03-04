@@ -6,9 +6,10 @@ Code by St. Spirit and Danijar Wolf, Feb 20, 2020.
 
 #include <iostream>
 #include<ctime>
+#include <random>
 
 #define DEFAULT_LEARNINGRATE 0.4
-#define DEFAULT_BIASLEARNINGRATE 0.03
+#define DEFAULT_BIASLEARNINGRATE 0.5
 //#define DEFAULT_MOMENTUM 0.1
 
 template <typename T> struct DataSet;
@@ -75,7 +76,7 @@ public:
     const T dot(const Neuron<T>& neuron) const;
     const Neuron<T> operator*(const Matrix<T>& matrix) const;
     const Neuron<T> operator*(const Neuron<T>& neuron) const;
-
+    const Neuron<T> operator*(const T& scalar) const;
     const Neuron<T>& operator-=(const Neuron<T>& neuron) const;
     const Neuron<T> operator-(const Neuron<T>& neuron) const;
 
@@ -123,6 +124,15 @@ const Neuron<T> Neuron<T>::operator*(const Neuron<T>& neuron) const {
     Neuron<T> vec(neuron.len);
     for (unsigned i = 0; i < len; ++i) {
         vec[i] = array[i] * neuron[i];
+    }
+    return vec;
+}
+
+template<typename T>
+const Neuron<T> Neuron<T>::operator*(const T& scalar) const {
+    Neuron<T> vec(this->len);
+    for (unsigned i = 0; i < vec.len; ++i) {
+        vec[i] = this->array[i] * scalar;
     }
     return vec;
 }
@@ -311,11 +321,20 @@ public:
         transferFunction(transferFunction),
         weights(rows, cols),
         outputs(cols),
-        bias(static_cast<T>(0)) {
+        biases(cols),
+        bias(static_cast<T>(1)) {
+        //std::default_random_engine generator;
+        //std::normal_distribution<T> distribution(0.0, 1.0/sqrt(2));
+
         for (unsigned i = 0, j; i < cols; ++i) {
             for (j = 0; j < rows; ++j) {
                 weights[i][j] = static_cast<unsigned>(rand() % 2) ? static_cast<T>(rand()) / RAND_MAX : static_cast<T>(rand()) / -RAND_MAX;
+                //weights[i][j] = distribution(generator);
             }
+        }
+
+        for (unsigned i = 0; i < cols; ++i) {
+            biases[i] = static_cast<unsigned>(rand() % 2) ? static_cast<T>(rand()) / RAND_MAX : static_cast<T>(rand()) / -RAND_MAX;
         }
     }
 
@@ -344,6 +363,7 @@ private:
     const unsigned cols;
     const unsigned rows;
     Matrix<T> weights;
+    Neuron<T> biases;
 
     //const 
     void activation_mapper();
@@ -351,7 +371,7 @@ private:
 
 template<typename T>
 Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors, const Neuron<T>& input, const T& learning_rate) {
-    T bias_Delta = static_cast<T>(1.0);
+    T bias_Delta = 0;
     //Neuron<T> derOfSigmoid(outputs.len);
     Neuron<T> gamma(outputs.len);
 
@@ -386,14 +406,19 @@ Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors, const Neuron<T>& in
     }
     std::cout << std::endl;
 */
-    weights -= in * wdl * learning_rate;
-/*
     for (unsigned i = 0; i < gamma.len; ++i) {
-        bias_Delta *= gamma[i];
+        //bias_Delta *= gamma[i];
+        biases[i] -= gamma[i] * learning_rate;
     }
-    bias -= bias_Delta * DEFAULT_BIASLEARNINGRATE;
-    */
+
+
+    //bias -= bias_Delta * DEFAULT_BIASLEARNINGRATE;
+
     //bias -= bias_Delta * learning_rate;
+
+    gamma = weights * gamma;
+
+    weights -= in * wdl * learning_rate;
 
     return gamma;
 }
@@ -410,15 +435,15 @@ void Layer<T>::activation_mapper() {
 
         switch (transferFunction) {
         case Activation::SIGMOID:
-            outputs[i] = Sigmoid(outputs[i] + bias);
+            outputs[i] = Sigmoid(outputs[i] + biases[i]);
             break;
         case Activation::SOFTMAX:
             break;
         case Activation::RELU:
-            outputs[i] = Relu(outputs[i] + bias);
+            outputs[i] = Relu(outputs[i] + biases[i]);
             break;
         case Activation::PLAIN:
-            outputs[i] = outputs[i] + bias;
+            outputs[i] = outputs[i] + biases[i];
             break;
         }
     }
@@ -519,19 +544,7 @@ void NeuralNetwork<U, T>::BackPropagation(const Neuron<T>& input, const Neuron<T
 
         pLayer = &current->layer;
         if (current->pNextDomain == nullptr) {
-
-            std::cout << "Input is equvals.............  ";
-            std::cout << label.array[0] << std::endl;
-            std::cout << std::endl;
-
-            std::cout << "Outputs is equvals.............  ";
-            std::cout << pLayer->outputs[0] << std::endl;
-            std::cout << std::endl;
-
             errors = pLayer->outputs - label;
-
-            std::cout << "Error is equvals.............  ";
-            std::cout << errors[0] << std::endl;
         }
         if (current->pPreviousDomain != nullptr) {
             pPreviousLayer = &current->pPreviousDomain->layer; 
@@ -539,17 +552,17 @@ void NeuralNetwork<U, T>::BackPropagation(const Neuron<T>& input, const Neuron<T
         }
         else {
             pInput = &input;
-/*
-            std::cout << "Last input is here............. " << std::endl;
-            for (unsigned i = 0; i < pInput->len; ++i) {
-                std::cout << pInput->array[i] << std::endl;
+
+            std::cout << "Outputs first layer is here............. " << std::endl;
+            for (unsigned i = 0; i < (pLayer->outputs).len; ++i) {
+                std::cout << pLayer->outputs[i] << std::endl;
             }
             std::cout << std::endl;
-*/
+
         }
 
         errors = pLayer->BackPropagation(errors, *pInput, learning_rate);
-        errors = pLayer->weights * errors;
+        //errors = pLayer->weights * errors;
         current = current->pPreviousDomain;
 
         //pLayer->PrunsignedLayer();
@@ -564,6 +577,13 @@ void NeuralNetwork<U, T>::FeedForward(const Neuron<T>& input) const {
     pInput = &input;
     
     U* pLayer;
+/*
+    std::cout << "Input " << std::endl;
+    for (unsigned i = 0; i < pInput->len; ++i) {
+        std::cout << pInput->array[i] << std::endl;
+    }
+    std::cout << std::endl;
+*/
     while (current != nullptr) {
 
         pLayer = &current->layer;
@@ -600,6 +620,8 @@ void NeuralNetwork<U, T>::Train(const unsigned epochs) const {
     Neuron<T> label(pDataSet->labels.rows);
 
     for (unsigned epoch = 0; epoch < epochs; ++epoch) {
+        std::cout << "!!!!!!!!!!!!!!!!!epoch is: " << epoch << std::endl;
+
         for (unsigned j = 0; j < pDataSet->inputs.rows; ++j)
         {
             for (unsigned i = 0; i < pDataSet->inputs.cols; ++i) {
@@ -622,9 +644,6 @@ void NeuralNetwork<U, T>::Train(const unsigned epochs) const {
             r = ((pLayer->outputs).len > 1) ? (pLayer->outputs).len - 1 : 1;
             m_error = m_error / r;
             m_error = static_cast<T>(sqrt(m_error));
-
-
-            std::cout << "epoch is: " << epoch << std::endl;
             printf("error = %f\r\n", m_error);
 
             BackPropagation(input, label);
@@ -673,7 +692,7 @@ struct DataSet {
 
 unsigned main()
 {
-
+/*
     const Matrix<double> m(3, 3);
     Neuron<double> v(3);
 
@@ -735,7 +754,7 @@ unsigned main()
         std::cout << std::endl;
     }
     std::cout << std::endl;
-
+*/
     const double _inputs[8][3] = {
       {0, 0, 0}, //0
       {0, 0, 1}, //1
@@ -751,7 +770,7 @@ unsigned main()
    const double _expectedLabels[8][1] = { {0}, {1}, {1}, {0}, {1}, {0}, {0}, {1} };
 
 
-    //srand(time(NULL));
+    srand(time(NULL));
 
     const Matrix<double> inputs(8, 3);
     inputs[0][0] = 0; inputs[1][0] = 0; inputs[2][0] = 0;
@@ -773,15 +792,15 @@ unsigned main()
     Layer<double> layer3(9, 9, Activation::SIGMOID);
     Layer<double> layer4(9, 1, Activation::SIGMOID);
 
-    NeuralNetwork<Layer<double>, double> NeuralNetwork(0.5);
+    NeuralNetwork<Layer<double>, double> NeuralNetwork(0.4);
     NeuralNetwork.pushLayer(layer1);
     NeuralNetwork.pushLayer(layer2);
     NeuralNetwork.pushLayer(layer3);
     NeuralNetwork.pushLayer(layer4);
 
-    //DataSet<double> dataset(inputs, expectedLabels);
-    //NeuralNetwork.mountDataSet(dataset);
-    //NeuralNetwork.Train(100);
+    DataSet<double> dataset(inputs, expectedLabels);
+    NeuralNetwork.mountDataSet(dataset);
+    NeuralNetwork.Train(100);
 
 
     //NeuralNetwork.pushLayer(layer0);

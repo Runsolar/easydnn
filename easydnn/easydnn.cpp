@@ -8,9 +8,9 @@ Code by St. Spirit and Danijar Wolf, Feb 20, 2020.
 #include<ctime>
 #include <random>
 
-#define DEFAULT_LEARNINGRATE 0.4
-#define DEFAULT_BIASLEARNINGRATE 0.5
-//#define DEFAULT_MOMENTUM 0.1
+#define DEFAULT_LEARNINGRATE 0.15
+#define DEFAULT_BIASLEARNINGRATE 0.05
+#define DEFAULT_MOMENTUM 0.2
 
 template <typename T> struct DataSet;
 enum class Activation { SIGMOID, SOFTMAX, RELU, PLAIN };
@@ -321,6 +321,7 @@ public:
         transferFunction(transferFunction),
         weights(rows, cols),
         outputs(cols),
+        pre_deltas_weights(rows, cols),
         biases(cols),
         bias(static_cast<T>(1)) {
         //std::default_random_engine generator;
@@ -329,6 +330,7 @@ public:
         for (unsigned i = 0, j; i < cols; ++i) {
             for (j = 0; j < rows; ++j) {
                 weights[i][j] = static_cast<unsigned>(rand() % 2) ? static_cast<T>(rand()) / RAND_MAX : static_cast<T>(rand()) / -RAND_MAX;
+                pre_deltas_weights[i][j] = static_cast<T>(0);
                 //weights[i][j] = distribution(generator);
             }
         }
@@ -363,6 +365,7 @@ private:
     const unsigned cols;
     const unsigned rows;
     Matrix<T> weights;
+    Matrix<T> pre_deltas_weights;
     Neuron<T> biases;
 
     //const 
@@ -410,15 +413,15 @@ Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors, const Neuron<T>& in
         //bias_Delta *= gamma[i];
         biases[i] -= gamma[i] * learning_rate;
     }
-
-
     //bias -= bias_Delta * DEFAULT_BIASLEARNINGRATE;
-
     //bias -= bias_Delta * learning_rate;
 
     gamma = weights * gamma;
 
+    //weights -= pre_deltas_weights*DEFAULT_MOMENTUM - in * wdl * -learning_rate*(1-DEFAULT_MOMENTUM);
     weights -= in * wdl * learning_rate;
+
+    pre_deltas_weights = in * wdl * learning_rate;
 
     return gamma;
 }
@@ -552,13 +555,13 @@ void NeuralNetwork<U, T>::BackPropagation(const Neuron<T>& input, const Neuron<T
         }
         else {
             pInput = &input;
-
+/*
             std::cout << "Outputs first layer is here............. " << std::endl;
             for (unsigned i = 0; i < (pLayer->outputs).len; ++i) {
                 std::cout << pLayer->outputs[i] << std::endl;
             }
             std::cout << std::endl;
-
+*/
         }
 
         errors = pLayer->BackPropagation(errors, *pInput, learning_rate);
@@ -787,12 +790,13 @@ unsigned main()
     expectedLabels[0][0] = 0; expectedLabels[1][0] = 1; expectedLabels[2][0] = 1;  expectedLabels[3][0] = 0;
     expectedLabels[4][0] = 1; expectedLabels[5][0] = 0; expectedLabels[6][0] = 0;  expectedLabels[7][0] = 1;
 
+
     Layer<double> layer1(3, 3, Activation::SIGMOID);
     Layer<double> layer2(3, 9, Activation::SIGMOID);
     Layer<double> layer3(9, 9, Activation::SIGMOID);
     Layer<double> layer4(9, 1, Activation::SIGMOID);
 
-    NeuralNetwork<Layer<double>, double> NeuralNetwork(0.4);
+    NeuralNetwork<Layer<double>, double> NeuralNetwork(0.25);
     NeuralNetwork.pushLayer(layer1);
     NeuralNetwork.pushLayer(layer2);
     NeuralNetwork.pushLayer(layer3);

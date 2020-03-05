@@ -529,10 +529,10 @@ void NeuralNetwork<U, T>::pushLayer(U& layerObj) {
 template<class U, typename T>
 void NeuralNetwork<U, T>::BackPropagation(const Neuron<T>& input, const Neuron<T>& label) const {
     Domain<U>* current = tail;
-    Neuron<T> errors(label.len);
+    Neuron<T> errors(label);
     const Neuron<T>* pInput;
     U* pLayer;
-    U* pPreviousLayer;
+    //U* pPreviousLayer;
 
     pLayer = &current->layer;
     while (current != nullptr) {
@@ -542,8 +542,11 @@ void NeuralNetwork<U, T>::BackPropagation(const Neuron<T>& input, const Neuron<T
             errors = pLayer->outputs - label;
         }
         if (current->pPreviousDomain != nullptr) {
+            /*
             pPreviousLayer = &current->pPreviousDomain->layer; 
             pInput = &pPreviousLayer->outputs;
+            */
+            pInput = &(&current->pPreviousDomain->layer)->outputs;
         }
         else {
             pInput = &input;
@@ -656,7 +659,7 @@ struct DataSet {
 };
 
 
-unsigned main()
+int main()
 {
 /*
     const Matrix<double> m(3, 3);
@@ -777,4 +780,6 @@ unsigned main()
 
 
     std::cout << "Hello World!\n";
+
+    return 0;
 }

@@ -103,8 +103,8 @@ const T Neuron<T>::dot(const Neuron<T>& neuron) const {
 
 template <typename T>
 const Neuron<T> Neuron<T>::reluDerivativeFunc() const {
-    Neuron<T> vec(this->len);
-    for (unsigned i = 0; i < vec.len; ++i) {
+    Neuron<T> vec(len);
+    for (unsigned i = 0; i < len; ++i) {
         vec[i] = (this->array[i] < static_cast<T>(0)) ? static_cast<T>(0) : static_cast<T>(1);
     }
     return vec;
@@ -121,7 +121,7 @@ const Neuron<T> Neuron<T>::operator*(const Matrix<T>& matrix) const {
 
 template<typename T>
 const Neuron<T> Neuron<T>::operator*(const Neuron<T>& neuron) const {
-    Neuron<T> vec(neuron.len);
+    Neuron<T> vec(len);
     for (unsigned i = 0; i < len; ++i) {
         vec[i] = array[i] * neuron[i];
     }
@@ -130,9 +130,9 @@ const Neuron<T> Neuron<T>::operator*(const Neuron<T>& neuron) const {
 
 template<typename T>
 const Neuron<T> Neuron<T>::operator*(const T& scalar) const {
-    Neuron<T> vec(this->len);
-    for (unsigned i = 0; i < vec.len; ++i) {
-        vec[i] = this->array[i] * scalar;
+    Neuron<T> vec(len);
+    for (unsigned i = 0; i < len; ++i) {
+        vec[i] = array[i] * scalar;
     }
     return vec;
 }
@@ -324,19 +324,21 @@ public:
         pre_deltas_weights(rows, cols),
         biases(cols),
         bias(static_cast<T>(1)) {
-        //std::default_random_engine generator;
-        //std::normal_distribution<T> distribution(0.0, 1.0/sqrt(2));
+        std::default_random_engine generator;
+        std::normal_distribution<T> distribution(0.0, 1);
 
         for (unsigned i = 0, j; i < cols; ++i) {
             for (j = 0; j < rows; ++j) {
-                weights[i][j] = static_cast<unsigned>(rand() % 2) ? static_cast<T>(rand()) / RAND_MAX : static_cast<T>(rand()) / -RAND_MAX;
-                pre_deltas_weights[i][j] = static_cast<T>(0);
-                //weights[i][j] = distribution(generator);
+                //weights[i][j] = static_cast<unsigned>(rand() % 2) ? static_cast<T>(rand()) / RAND_MAX : static_cast<T>(rand()) / -RAND_MAX;
+                //weights[i][j] = static_cast<T>(rand()) / RAND_MAX;
+                //pre_deltas_weights[i][j] = static_cast<T>(0);
+                weights[i][j] = distribution(generator);
             }
         }
 
         for (unsigned i = 0; i < cols; ++i) {
-            biases[i] = static_cast<unsigned>(rand() % 2) ? static_cast<T>(rand()) / RAND_MAX : static_cast<T>(rand()) / -RAND_MAX;
+            //biases[i] = static_cast<unsigned>(rand() % 2) ? static_cast<T>(rand()) / RAND_MAX : static_cast<T>(rand()) / -RAND_MAX;
+            biases[i] = static_cast<T>(rand()) / RAND_MAX;
         }
     }
 
@@ -421,8 +423,7 @@ Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors, const Neuron<T>& in
     //weights -= pre_deltas_weights*DEFAULT_MOMENTUM - in * wdl * -learning_rate*(1-DEFAULT_MOMENTUM);
     weights -= in * wdl * learning_rate;
 
-    pre_deltas_weights = in * wdl * learning_rate;
-
+    //pre_deltas_weights = in * wdl * learning_rate;
     return gamma;
 }
 
@@ -537,7 +538,7 @@ void NeuralNetwork<U, T>::pushLayer(U& layerObj) {
 template<class U, typename T>
 void NeuralNetwork<U, T>::BackPropagation(const Neuron<T>& input, const Neuron<T>& label) const {
     Domain<U>* current = tail;
-    Neuron<T> errors(label);
+    Neuron<T> errors(label.len);
     const Neuron<T>* pInput;
     U* pLayer;
     U* pPreviousLayer;
@@ -623,7 +624,7 @@ void NeuralNetwork<U, T>::Train(const unsigned epochs) const {
     Neuron<T> label(pDataSet->labels.rows);
 
     for (unsigned epoch = 0; epoch < epochs; ++epoch) {
-        std::cout << "!!!!!!!!!!!!!!!!!epoch is: " << epoch << std::endl;
+        //std::cout << "!!!!!!!!!!!!!!!!!epoch is: " << epoch << std::endl;
 
         for (unsigned j = 0; j < pDataSet->inputs.rows; ++j)
         {
@@ -647,7 +648,7 @@ void NeuralNetwork<U, T>::Train(const unsigned epochs) const {
             r = ((pLayer->outputs).len > 1) ? (pLayer->outputs).len - 1 : 1;
             m_error = m_error / r;
             m_error = static_cast<T>(sqrt(m_error));
-            printf("error = %f\r\n", m_error);
+            //printf("error = %f\r\n", m_error);
 
             BackPropagation(input, label);
         }
@@ -790,7 +791,6 @@ unsigned main()
     expectedLabels[0][0] = 0; expectedLabels[1][0] = 1; expectedLabels[2][0] = 1;  expectedLabels[3][0] = 0;
     expectedLabels[4][0] = 1; expectedLabels[5][0] = 0; expectedLabels[6][0] = 0;  expectedLabels[7][0] = 1;
 
-
     Layer<double> layer1(3, 3, Activation::SIGMOID);
     Layer<double> layer2(3, 9, Activation::SIGMOID);
     Layer<double> layer3(9, 9, Activation::SIGMOID);
@@ -804,7 +804,7 @@ unsigned main()
 
     DataSet<double> dataset(inputs, expectedLabels);
     NeuralNetwork.mountDataSet(dataset);
-    NeuralNetwork.Train(100);
+    NeuralNetwork.Train(6000);
 
 
     //NeuralNetwork.pushLayer(layer0);

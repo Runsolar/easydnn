@@ -794,7 +794,7 @@ unsigned main()
     Layer<double> layer1(3, 3, Activation::SIGMOID);
     Layer<double> layer2(3, 9, Activation::SIGMOID);
     Layer<double> layer3(9, 9, Activation::SIGMOID);
-    Layer<double> layer4(9, 1, Activation::SIGMOID);
+    Layer<double> layer4(9, 1, Activation::RELU);
 
     NeuralNetwork<Layer<double>, double> NeuralNetwork(0.25);
     NeuralNetwork.pushLayer(layer1);

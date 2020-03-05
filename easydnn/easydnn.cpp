@@ -337,8 +337,8 @@ public:
         }
 
         for (unsigned i = 0; i < cols; ++i) {
-            //biases[i] = static_cast<unsigned>(rand() % 2) ? static_cast<T>(rand()) / RAND_MAX : static_cast<T>(rand()) / -RAND_MAX;
-            biases[i] = static_cast<T>(rand()) / RAND_MAX;
+            biases[i] = static_cast<unsigned>(rand() % 2) ? static_cast<T>(rand()) / RAND_MAX : static_cast<T>(rand()) / -RAND_MAX;
+            //biases[i] = static_cast<T>(rand()) / RAND_MAX;
         }
     }
 
@@ -401,16 +401,6 @@ Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors, const Neuron<T>& in
     
     in[0] = input;
     for(unsigned i=0; i< gamma.len; ++i) wdl[i][0] = gamma[i];
- /*   
-    gradients = in * wdl * learning_rate;
-    for (unsigned j = 0, i; j < rows; ++j) {
-        for (i = 0; i < cols; ++i) {
-            std::cout << static_cast<T>(gradients[i][j]) << "   ";
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
-*/
     for (unsigned i = 0; i < gamma.len; ++i) {
         //bias_Delta *= gamma[i];
         biases[i] -= gamma[i] * learning_rate;
@@ -418,7 +408,7 @@ Neuron<T> Layer<T>::BackPropagation(const Neuron<T>& errors, const Neuron<T>& in
     //bias -= bias_Delta * DEFAULT_BIASLEARNINGRATE;
     //bias -= bias_Delta * learning_rate;
 
-    gamma = weights * gamma;
+    gamma = weights * gamma; //calculating a pregamma for a next layer
 
     //weights -= pre_deltas_weights*DEFAULT_MOMENTUM - in * wdl * -learning_rate*(1-DEFAULT_MOMENTUM);
     weights -= in * wdl * learning_rate;
@@ -450,6 +440,7 @@ void Layer<T>::activation_mapper() {
             outputs[i] = outputs[i] + biases[i];
             break;
         }
+
     }
 }
 
@@ -520,7 +511,7 @@ template<class U, typename T>
 void NeuralNetwork<U, T>::pushLayer(U& layerObj) {
     if (head == nullptr) {
         head = new Domain<U>(layerObj);
-        std::cout << "A first Domain has been created..." << this << std::endl;
+        std::cout << "A Domain has been created..." << this << std::endl;
         return;
     }
 
@@ -556,21 +547,11 @@ void NeuralNetwork<U, T>::BackPropagation(const Neuron<T>& input, const Neuron<T
         }
         else {
             pInput = &input;
-/*
-            std::cout << "Outputs first layer is here............. " << std::endl;
-            for (unsigned i = 0; i < (pLayer->outputs).len; ++i) {
-                std::cout << pLayer->outputs[i] << std::endl;
-            }
-            std::cout << std::endl;
-*/
         }
 
         errors = pLayer->BackPropagation(errors, *pInput, learning_rate);
         //errors = pLayer->weights * errors;
         current = current->pPreviousDomain;
-
-        //pLayer->PrunsignedLayer();
-        //std::cout << std::endl;
     }
 };
 
@@ -581,24 +562,11 @@ void NeuralNetwork<U, T>::FeedForward(const Neuron<T>& input) const {
     pInput = &input;
     
     U* pLayer;
-/*
-    std::cout << "Input " << std::endl;
-    for (unsigned i = 0; i < pInput->len; ++i) {
-        std::cout << pInput->array[i] << std::endl;
-    }
-    std::cout << std::endl;
-*/
     while (current != nullptr) {
-
         pLayer = &current->layer;
         pLayer->FeedForward(*pInput);
         pInput = &pLayer->outputs;
-        current = current->pNextDomain;
-        
-        //pLayer->PrunsignedOutputs();
-        //std::cout << std::endl;
-        //pLayer->PrunsignedLayer();
-        //std::cout << std::endl;
+        current = current->pNextDomain;  
     }
 }
 
@@ -612,14 +580,8 @@ void NeuralNetwork<U, T>::Train(const unsigned epochs) const {
     Domain<U>* current = tail;
     U* pLayer = &current->layer;
 
-    //result = pLayer->outputs;
-
     T r;
     T delta_err;
-
-    //std::cout << &pDataSet->inputs.cols << std::endl;
-    //std::cout << &pDataSet->labels.rows << std::endl;
-
     Neuron<T> input(pDataSet->inputs.cols);
     Neuron<T> label(pDataSet->labels.rows);
 
@@ -794,7 +756,7 @@ unsigned main()
     Layer<double> layer1(3, 3, Activation::SIGMOID);
     Layer<double> layer2(3, 9, Activation::SIGMOID);
     Layer<double> layer3(9, 9, Activation::SIGMOID);
-    Layer<double> layer4(9, 1, Activation::RELU);
+    Layer<double> layer4(9, 1, Activation::SIGMOID);
 
     NeuralNetwork<Layer<double>, double> NeuralNetwork(0.25);
     NeuralNetwork.pushLayer(layer1);

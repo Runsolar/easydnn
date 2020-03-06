@@ -353,8 +353,6 @@ Matrix<T>& Matrix<T>::operator()(const Matrix<T>& matrixObj) {
 }
 
 
-
-
 template<typename T>
 class Neuron : public Vector<T> {
 public:
@@ -362,12 +360,11 @@ public:
 
     Neuron(): Vector<T>::Vector(), numOfInputs(0), state(0), weights(nullptr) {}
 
-    explicit Neuron(const unsigned &numOfImputs) : Vector<T>::Vector(numOfInputs) {
-        this->numOfInputs = numOfImputs;
+    explicit Neuron(const unsigned &numOfInputs) : Vector<T>::Vector(numOfInputs) {
+        this->numOfInputs = numOfInputs;
         state = 0;
         weights = this->array;
     }
-
     ~Neuron() {}
 
     const T& operator[](const unsigned& index) const;
@@ -430,8 +427,6 @@ Neuron<T>& Neuron<T>::operator=(const Neuron<T>& neuron) {
 template<typename T>
 Neuron<T>& Neuron<T>::operator=(const Vector<T>& vector) {
 
-    //if (Vector<T>:: == &vector) return *this;
-
     if (this->getLen() == vector.getLen()) {
 
         for (unsigned i = 0; i < this->getLen(); ++i)
@@ -482,6 +477,17 @@ Neuron<T>& Neuron<T>::operator()(const Neuron<T>& neuron) {
 }
 
 
+
+template<typename T>
+class NeuralClaster: public Matrix<T> {
+    NeuralClaster(const unsigned numOfInputs, const unsigned numOfNeurons): Matrix<T>::Matrix(numOfInputs, numOfNeurons) {
+
+    }
+};
+
+
+
+
 template<typename T>
 class Layer {
     friend NeuralNetwork<Layer<T>, T>;
@@ -490,6 +496,7 @@ public:
     T bias;    // bias of each layer
     //using element_type = typename std::remove_reference< decltype(std::declval<T>) >::type;
     Neuron<T> outputs;
+    //Vector<T> outputs;
 
     Activation transferFunction;
 
@@ -497,20 +504,11 @@ public:
         const unsigned numsOfPerceptrons, Activation transferFunction) :
         rows(numsOfWeights),
         cols(numsOfPerceptrons),
-        transferFunction(transferFunction) {
-
-        Matrix<T> w(rows, cols);
-        weights(w);
-
-        Neuron<T> o(cols);
-        outputs(o);
-
-        Neuron<T> b(cols);
-        biases(b);
-        
-        //pre_deltas_weights(rows, cols),
-        bias = static_cast<T>(1);
-        
+        transferFunction(transferFunction),
+        weights(rows, cols),
+        outputs(cols),
+        biases(cols),
+        bias(static_cast<T>(1)) {      
         std::default_random_engine generator;
         std::normal_distribution<T> distribution(0.0, 1);
 

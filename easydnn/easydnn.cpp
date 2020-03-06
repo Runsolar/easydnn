@@ -40,30 +40,46 @@ class Vector {
 
 public:
     unsigned len;
+    T state;
 
     //Vector() = delete;
-    Vector() : len(0), array(nullptr) {}
+    //Vector() : len(0), data(nullptr), state(0) {}
 
-    explicit Vector(const unsigned &len) : len(len), array(nullptr) {
+    explicit Vector(const unsigned &len) : len(len), data(nullptr), state(0) {
+
         try {
-            array = new T[len]();
+            data = new T[len]();
             //std::cout << "A new Vector hase been created... " << this << std::endl;
         }
         catch (std::exception & ex) {
             std::cout << "En exception is happened... " << ex.what() << std::endl;
             return;
         }
+
+        try {
+            pdata = new T*[len]();
+        }
+        catch (std::exception & ex) {
+            std::cout << "En exception is happened... " << ex.what() << std::endl;
+            return;
+        }
+
+        for (unsigned i = 0; i < len; ++i) {
+            pdata[i] = &data[i];
+        }
     }
+
 
     Vector(const Vector<T>& vec) : Vector(vec.len) {
         if (this == &vec) return;
         for (unsigned i = 0; i < len; ++i) {
-            array[i] = vec[i];
+            *pdata[i] = *vec.pdata[i];
         }
     }
 
-    ~Vector() {
-        delete[] array;
+    virtual ~Vector() {
+        delete[] pdata;
+        delete[] data;
         //std::cout << "A Vector hase been deleted... " << this << std::endl;
     }
 
@@ -72,11 +88,11 @@ public:
     }
 
     T& operator[](const unsigned index) {
-        return array[index];
+        return *pdata[index];
     }
 
     const T& operator[](const unsigned index) const {
-        return array[index];
+        return *pdata[index];
     }
 
     const T dot(const Vector<T>& Vector) const;
@@ -90,17 +106,19 @@ public:
     Vector<T>& operator()(const Vector<T>& Vector);
 
 protected:
-    T* array;
+    T* data;
+    T** pdata;
     const Vector<T> reluDerivativeFunc() const;
 };
 
 
 template<typename T>
-const T Vector<T>::dot(const Vector<T>& Vector) const {
+const T Vector<T>::dot(const Vector<T>& vector) const {
     T sum = 0;
-    if (len == Vector.len) {
+    if (len == vector.len) {
         for (unsigned i = 0; i < len; ++i) {
-            sum += array[i] * Vector[i];
+            //sum += data[i] * Vector[i];
+            sum += *pdata[i] **vector.pdata[i];
         }
     }
     return sum;
@@ -110,7 +128,7 @@ template <typename T>
 const Vector<T> Vector<T>::reluDerivativeFunc() const {
     Vector<T> vec(len);
     for (unsigned i = 0; i < len; ++i) {
-        vec[i] = (this->array[i] < static_cast<T>(0)) ? static_cast<T>(0) : static_cast<T>(1);
+        *vec.pdata[i] = (*pdata[i] < static_cast<T>(0)) ? static_cast<T>(0) : static_cast<T>(1);
     }
     return vec;
 }
@@ -119,7 +137,7 @@ template<typename T>
 const Vector<T> Vector<T>::operator*(const Matrix<T>& matrix) const {
     Vector<T> vec(matrix.cols);
     for (unsigned i = 0; i < matrix.cols; ++i) {
-        vec[i] = dot(matrix[i]);
+        *vec.pdata[i] = dot(matrix[i]);
     }
     return vec;
 }
@@ -128,7 +146,8 @@ template<typename T>
 const Vector<T> Vector<T>::operator*(const Vector<T>& vector) const {
     Vector<T> vec(len);
     for (unsigned i = 0; i < len; ++i) {
-        vec[i] = array[i] * vector[i];
+        //vec[i] = data[i] * vector[i];
+        *vec.pdata[i] = *pdata[i] **vector.pdata[i];
     }
     return vec;
 }
@@ -137,7 +156,7 @@ template<typename T>
 const Vector<T> Vector<T>::operator*(const T& scalar) const {
     Vector<T> vec(len);
     for (unsigned i = 0; i < len; ++i) {
-        vec[i] = array[i] * scalar;
+        *vec.pdata[i] = *pdata[i] * scalar;
     }
     return vec;
 }
@@ -154,7 +173,8 @@ const Vector<T>& Vector<T>::operator-=(const Vector<T>& vector) const {
     //this += Vector * (-1);
     if (len == vector.len) {
         for (unsigned i = 0; i < len; ++i) {
-            array[i] -= vector[i];
+            //data[i] -= vector[i];
+            *pdata[i] -= *vector.pdata[i];
         }
     }
     return *this;
@@ -165,15 +185,27 @@ Vector<T>& Vector<T>::operator=(const Vector<T>& vector) {
     if (this == &vector) return *this;
     if (len == vector.len) {
         for (unsigned i = 0; i < len; ++i) {
-            array[i] = vector[i];
+            *pdata[i] = *vector.pdata[i];
+            //pdata[i] = &data[i];
         }
     }
     else {
         len = vector.len;
-        if (array != nullptr) delete[] array;
-        array = new T[len]();
+        
+        if (pdata != nullptr) {
+            delete[] pdata;
+        }
+        if (data != nullptr) {
+            delete[] data;
+        }
+
+        data = new T[len]();
+        pdata = new T * [len]();
+
         for (unsigned i = 0; i < len; ++i) {
-            array[i] = vector[i];
+            //data[i] = vector[i];
+            pdata[i] = &data[i];
+            *pdata[i] = *vector.pdata[i];
         }
     }
     return *this;
@@ -182,16 +214,22 @@ Vector<T>& Vector<T>::operator=(const Vector<T>& vector) {
 template<typename T>
 Vector<T>& Vector<T>::operator()(const Vector<T>& vector) {
 
-    if (array != nullptr) {
-        delete[] array;
+    if (pdata != nullptr) {
+        delete[] pdata;
     }
+    if (data != nullptr) {
+        delete[] data;
+    }
+
     len = vector.len;
 
-    array = new T[len]();
+    data = new T[len]();
+    pdata = new T * [len]();
 
     for (unsigned i = 0; i < len; ++i)
     {
-        array[i] = vector[i];
+        pdata[i] = &data[i];
+        *pdata[i] = *vector.pdata[i];
     }
 
     return *this;
@@ -353,19 +391,26 @@ Matrix<T>& Matrix<T>::operator()(const Matrix<T>& matrixObj) {
 }
 
 
+/*
 template<typename T>
-class Neuron : public Vector<T> {
+class Neuron : virtual public Vector<T> {
 public:
     unsigned numOfInputs = 0;
 
-    Neuron(): Vector<T>::Vector(), numOfInputs(0), state(0), weights(nullptr) {}
+    //Neuron(): Vector<T>::Vector(), numOfInputs(0), state(nullptr), weights(nullptr) {}
+    Neuron() = delete;
 
     explicit Neuron(const unsigned &numOfInputs) : Vector<T>::Vector(numOfInputs) {
         this->numOfInputs = numOfInputs;
-        state = 0;
-        weights = this->array;
+        state = new T();
+        *state = 0;
+        weights = this->data;
     }
-    ~Neuron() {}
+
+    ~Neuron() {
+        std::cout << "Delete a neuron " << std::endl;
+        //delete state;
+    }
 
     const T& operator[](const unsigned& index) const;
     T& operator[](const unsigned& index);
@@ -375,7 +420,7 @@ public:
     Neuron<T>& operator()(const Neuron<T>& neuron);
 
 private:
-    T state;
+    T* state;
     T* weights;
 };
 
@@ -404,15 +449,15 @@ Neuron<T>& Neuron<T>::operator=(const Neuron<T>& neuron) {
         }
     }
     else {
-        if (Vector<T>::array != nullptr) {
-            delete[] Vector<T>::array;
+        if (Vector<T>::data != nullptr) {
+            delete[] Vector<T>::data;
         }
         numOfInputs = neuron.numOfInputs;
         Vector<T>::len = numOfInputs;
         state = 0;
 
-        Vector<T>::array = new T[Vector<T>::len]();
-        weights = Vector<T>::array;
+        Vector<T>::data = new T[Vector<T>::len]();
+        weights = Vector<T>::data;
 
         for (unsigned i = 0; i < Vector<T>::len; ++i)
         {
@@ -423,33 +468,33 @@ Neuron<T>& Neuron<T>::operator=(const Neuron<T>& neuron) {
     return *this;
 }
 */
-
+/*
 template<typename T>
 Neuron<T>& Neuron<T>::operator=(const Vector<T>& vector) {
 
     if (this->getLen() == vector.getLen()) {
-
         for (unsigned i = 0; i < this->getLen(); ++i)
         {
-            this->array[i] = vector[i];
+            this->data[i] = vector[i];
         }
 
     }
     else {
-        if (Vector<T>::array != nullptr) {
-            delete[] Vector<T>::array;
+        if (Vector<T>::data != nullptr) {
+            delete[] Vector<T>::data;
+        }
+        if (state != nullptr) {
+            delete state;
         }
 
         numOfInputs = vector.len;
-        Vector<T>::len = numOfInputs;
-        state = 0;
-
-        Vector<T>::array = new T[Vector<T>::len]();
-        weights = Vector<T>::array;
+        this->len = numOfInputs;
+        this->data = new T[this->len]();
+        weights = this->data;
 
         for (unsigned i = 0; i < Vector<T>::len; ++i)
         {
-            this->array[i] = vector[i];
+            this->data[i] = vector[i];
         }
     }
 
@@ -458,34 +503,54 @@ Neuron<T>& Neuron<T>::operator=(const Vector<T>& vector) {
 
 template<typename T>
 Neuron<T>& Neuron<T>::operator()(const Neuron<T>& neuron) {
-    if (this->array != nullptr) {
-        delete[] this->array;
+    if (this->data != nullptr) {
+        delete[] this->data;
     }
+
+    if (state != nullptr) {
+        delete state;
+    }
+
+    state = new T();
+    *state = *(neuron.state);
+
     numOfInputs = neuron.numOfInputs;
     this->len = numOfInputs;
-    state = neuron.state;
-
-    this->array = new T[this->len]();
-    weights = this->array;
+    this->data = new T[this->len]();
+    weights = this->data;
 
     for (unsigned i = 0; i < this->len; ++i)
     {
-        this->array[i] = neuron[i];
+        this->data[i] = neuron[i];
     }
 
     return *this;
 }
-
-
-
+*/
+/*
 template<typename T>
 class NeuralClaster: public Matrix<T> {
-    NeuralClaster(const unsigned numOfInputs, const unsigned numOfNeurons): Matrix<T>::Matrix(numOfInputs, numOfNeurons) {
+public:
 
+    explicit NeuralClaster(const unsigned& numOfInputs, const unsigned& numOfNeurons): Matrix<T>::Matrix(), numOfInputs(numOfInputs), numOfNeurons(numOfNeurons) {
+       
+        claster = new Neuron<T> * [cols];
+        for (unsigned i = 0; i < cols; ++i) {
+            claster[i] = new Neuron<T>(rows);
+        }
+        //std::cout << "A new NeuralClaster has been created... " << this << std::endl;
     }
+
+    Neuron<T>& operator[](const unsigned& index) const {
+        return *claster[index];
+    }
+
+private:
+    unsigned numOfNeurons;
+    unsigned numOfInputs;
+    Neuron<T>** claster;
 };
-
-
+*/
 
 
 template<typename T>
@@ -495,8 +560,8 @@ class Layer {
 public:
     T bias;    // bias of each layer
     //using element_type = typename std::remove_reference< decltype(std::declval<T>) >::type;
-    Neuron<T> outputs;
-    //Vector<T> outputs;
+    //Neuron<T> outputs;
+    Vector<T> outputs;
 
     Activation transferFunction;
 
@@ -505,10 +570,15 @@ public:
         rows(numsOfWeights),
         cols(numsOfPerceptrons),
         transferFunction(transferFunction),
-        weights(rows, cols),
-        outputs(cols),
-        biases(cols),
-        bias(static_cast<T>(1)) {      
+        weights(numsOfWeights, numsOfPerceptrons),
+        outputs(numsOfPerceptrons),
+        biases(numsOfPerceptrons),
+        bias(static_cast<T>(1)) {  
+
+        for (unsigned i = 0; i < cols; ++i) {
+            outputs.pdata[i] = &weights[i].state;
+        }
+
         std::default_random_engine generator;
         std::normal_distribution<T> distribution(0.0, 1);
 
@@ -525,9 +595,11 @@ public:
             biases[i] = static_cast<unsigned>(rand() % 2) ? static_cast<T>(rand()) / RAND_MAX : static_cast<T>(rand()) / -RAND_MAX;
             //biases[i] = static_cast<T>(rand()) / RAND_MAX;
         }
+
     }
 
-    ~Layer() {}
+    ~Layer() {
+    }
 
     void PrunsignedLayer() const {
         for (unsigned j = 0, i; j < rows; ++j) {
@@ -552,8 +624,11 @@ private:
     const unsigned cols;
     const unsigned rows;
     Matrix<T> weights;
+
+    //NeuralClaster<T> neurons;
+    
     Matrix<T> pre_deltas_weights;
-    Neuron<T> biases;
+    Vector<T> biases;
 
     //const 
     void activation_mapper();
@@ -945,7 +1020,7 @@ int main()
     Layer<double> layer2(3, 9, Activation::SIGMOID);
     Layer<double> layer3(9, 9, Activation::SIGMOID);
     Layer<double> layer4(9, 1, Activation::SIGMOID);
-    
+
     NeuralNetwork<Layer<double>, double> NeuralNetwork(0.25);
     NeuralNetwork.pushLayer(layer1);
     NeuralNetwork.pushLayer(layer2);
@@ -955,7 +1030,6 @@ int main()
     DataSet<double> dataset(inputs, expectedLabels);
     NeuralNetwork.mountDataSet(dataset);
     NeuralNetwork.Train(8000);
-
 
    //NeuralNetwork.pushLayer(layer0);
    //NeuralNetwork.pushLayer(Layer<double>(120, 64));

@@ -391,25 +391,21 @@ Matrix<T>& Matrix<T>::operator()(const Matrix<T>& matrixObj) {
 }
 
 
-/*
 template<typename T>
 class Neuron : virtual public Vector<T> {
 public:
     unsigned numOfInputs = 0;
+    T state;
 
     //Neuron(): Vector<T>::Vector(), numOfInputs(0), state(nullptr), weights(nullptr) {}
     Neuron() = delete;
 
     explicit Neuron(const unsigned &numOfInputs) : Vector<T>::Vector(numOfInputs) {
         this->numOfInputs = numOfInputs;
-        state = new T();
-        *state = 0;
-        weights = this->data;
+        weights = this->pdata;
     }
 
     ~Neuron() {
-        std::cout << "Delete a neuron " << std::endl;
-        //delete state;
     }
 
     const T& operator[](const unsigned& index) const;
@@ -417,10 +413,9 @@ public:
 
     //Neuron<T>& operator=(const Neuron<T>& neuron);
     Neuron<T>& operator=(const Vector<T>& neuron);
-    Neuron<T>& operator()(const Neuron<T>& neuron);
+    //Neuron<T>& operator()(const Neuron<T>& neuron);
 
 private:
-    T* state;
     T* weights;
 };
 
@@ -468,52 +463,50 @@ Neuron<T>& Neuron<T>::operator=(const Neuron<T>& neuron) {
     return *this;
 }
 */
-/*
+
 template<typename T>
 Neuron<T>& Neuron<T>::operator=(const Vector<T>& vector) {
 
-    if (this->getLen() == vector.getLen()) {
-        for (unsigned i = 0; i < this->getLen(); ++i)
+    if (this->len== vector.len) {
+        for (unsigned i = 0; i < this->len; ++i)
         {
-            this->data[i] = vector[i];
+            *this->pdata[i] = vector[i];
         }
 
     }
     else {
-        if (Vector<T>::data != nullptr) {
-            delete[] Vector<T>::data;
-        }
-        if (state != nullptr) {
-            delete state;
+        if (this->data != nullptr) {
+            delete[] this->data;
         }
 
+        if (this->pdata != nullptr) {
+            delete[] this->pdata;
+        }
         numOfInputs = vector.len;
         this->len = numOfInputs;
         this->data = new T[this->len]();
-        weights = this->data;
+        this->pdata = new T*[this->len]();
+
+        weights = this->pdata;
 
         for (unsigned i = 0; i < Vector<T>::len; ++i)
         {
-            this->data[i] = vector[i];
+            *this->pdata[i] = vector[i];
+            //*weights[i] = vector[i];
         }
     }
 
     return *this;
 }
 
+/*
 template<typename T>
 Neuron<T>& Neuron<T>::operator()(const Neuron<T>& neuron) {
     if (this->data != nullptr) {
         delete[] this->data;
     }
 
-    if (state != nullptr) {
-        delete state;
-    }
-
-    state = new T();
-    *state = *(neuron.state);
-
+    state = neuron.state;
     numOfInputs = neuron.numOfInputs;
     this->len = numOfInputs;
     this->data = new T[this->len]();
@@ -527,6 +520,7 @@ Neuron<T>& Neuron<T>::operator()(const Neuron<T>& neuron) {
     return *this;
 }
 */
+
 /*
 template<typename T>
 class NeuralClaster: public Matrix<T> {

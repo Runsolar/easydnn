@@ -41,9 +41,9 @@ class Vector {
 
 public:
     unsigned len;
-    //Vector() = delete;
+    
+    Vector() = delete;
     //Vector() : len(0), data(nullptr) {}
-
     explicit Vector(const unsigned &len) : len(len), data(nullptr) {
 
         try {

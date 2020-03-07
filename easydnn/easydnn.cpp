@@ -16,6 +16,7 @@ template <typename T> struct DataSet;
 enum class Activation { SIGMOID, SOFTMAX, RELU, PLAIN };
 template<typename T> class Vector;
 template<typename T> class Matrix;
+template<typename T> class Neuron;
 template<typename T> class Layer;
 template<class U, typename T> class NeuralNetwork;
 
@@ -36,16 +37,14 @@ template<typename T>
 class Vector {
     friend Layer<T>;
     //friend const Vector<T> operator-(const Vector<T>& x, const Vector<T>& y);
-    friend NeuralNetwork<Layer<T>, T>;
+    //friend NeuralNetwork<Layer<T>, T>;
 
 public:
     unsigned len;
-    T state;
-
     //Vector() = delete;
-    //Vector() : len(0), data(nullptr), state(0) {}
+    //Vector() : len(0), data(nullptr) {}
 
-    explicit Vector(const unsigned &len) : len(len), data(nullptr), state(0) {
+    explicit Vector(const unsigned &len) : len(len), data(nullptr) {
 
         try {
             data = new T[len]();
@@ -246,16 +245,16 @@ public:
     Matrix(): rows(0), cols(0), matrix(nullptr) {}
 
     explicit Matrix(const unsigned rows, const unsigned cols) : rows(rows), cols(cols) {
-        matrix = new Vector<T> * [cols];
+        matrix = new Neuron<T> * [cols];
         for (unsigned i = 0; i < cols; ++i) {
-            matrix[i] = new Vector<T>(rows);
+            matrix[i] = new Neuron<T>(rows);
         }
         //std::cout << "A new matrix has been created... " << this << std::endl;
     }
 
     Matrix(const Matrix<T>& matrixObj) : Matrix(matrixObj.rows, matrixObj.cols) {
         for (unsigned i = 0, j; i < cols; ++i) {
-            Vector<T>& col = *matrix[i];
+            Neuron<T>& col = *matrix[i];
             for (j = 0; j < rows; j++) {
                 col[j] = matrixObj[i][j];
             }
@@ -267,7 +266,7 @@ public:
             return Col[j];
         }
     */
-    Vector<T>& operator[](const unsigned index) const {
+    Neuron<T>& operator[](const unsigned index) const {
         return *matrix[index];
     }
 
@@ -280,7 +279,7 @@ public:
     const Matrix<T>& operator=(const Matrix<T>& matrixObj) const {
         if (cols == matrixObj.cols && rows == matrixObj.rows) {
             for (unsigned i = 0, j; i < cols; ++i) {
-                Vector<T>& col = *matrix[i];
+                Neuron<T>& col = *matrix[i];
                 for (j = 0; j < rows; j++) {
                     col[j] = matrixObj[i][j];
                 }
@@ -289,7 +288,7 @@ public:
         return *this;
     }
 
-    Matrix<T>& operator()(const Matrix<T>& matrix);
+    //Matrix<T>& operator()(const Matrix<T>& matrix);
 
     ~Matrix() {
         for (unsigned i = 0; i < cols; ++i) {
@@ -302,7 +301,8 @@ public:
 private:
     unsigned cols;
     unsigned rows;
-    Vector<T>** matrix;
+    //Vector<T>** matrix;
+    Neuron<T>** matrix;
 };
 
 
@@ -320,7 +320,7 @@ const Matrix<T> Matrix<T>::operator*(const T& scalar) const {
 
 template<typename T>
 const Vector<T> Matrix<T>::operator*(const Vector<T>& vec) const {
-    Vector<T> res(rows);
+    Neuron<T> res(rows);
 
     for (unsigned j = 0, i; j < rows; ++j) {
         res[j] = 0;
@@ -366,6 +366,7 @@ const Matrix<T> Matrix<T>::operator-(const Matrix<T>& m) const {
     return res;
 }
 
+/*
 template<typename T>
 Matrix<T>& Matrix<T>::operator()(const Matrix<T>& matrixObj) {
     cols = matrixObj.cols;
@@ -389,7 +390,7 @@ Matrix<T>& Matrix<T>::operator()(const Matrix<T>& matrixObj) {
 
     return *this;
 }
-
+*/
 
 template<typename T>
 class Neuron : virtual public Vector<T> {
@@ -400,7 +401,7 @@ public:
     //Neuron(): Vector<T>::Vector(), numOfInputs(0), state(nullptr), weights(nullptr) {}
     Neuron() = delete;
 
-    explicit Neuron(const unsigned &numOfInputs) : Vector<T>::Vector(numOfInputs) {
+    Neuron(const unsigned &numOfInputs) : Vector<T>::Vector(numOfInputs) {
         this->numOfInputs = numOfInputs;
         weights = this->pdata;
     }
@@ -416,17 +417,17 @@ public:
     //Neuron<T>& operator()(const Neuron<T>& neuron);
 
 private:
-    T* weights;
+    T** weights;
 };
 
 template<typename T>
 const T& Neuron<T>::operator[](const unsigned& index) const {
-    return weights[index];
+    return *weights[index];
 }
 
 template<typename T>
 T& Neuron<T>::operator[](const unsigned& index) {
-    return weights[index];
+    return *weights[index];
 }
 
 /*

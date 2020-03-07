@@ -17,6 +17,7 @@ enum class Activation { SIGMOID, SOFTMAX, RELU, PLAIN };
 template<typename T> class Vector;
 template<typename T> class Matrix;
 template<typename T> class Neuron;
+template<typename T> class NeuralClaster;
 template<typename T> class Layer;
 template<class U, typename T> class NeuralNetwork;
 
@@ -298,7 +299,7 @@ public:
         //std::cout << "A matrix has been deleted... " << this << std::endl;
     }
 
-private:
+protected:
     unsigned cols;
     unsigned rows;
     //Vector<T>** matrix;
@@ -400,8 +401,7 @@ public:
 
     //Neuron(): Vector<T>::Vector(), numOfInputs(0), state(nullptr), weights(nullptr) {}
     Neuron() = delete;
-
-    Neuron(const unsigned &numOfInputs) : Vector<T>::Vector(numOfInputs) {
+    Neuron(const unsigned &numOfInputs) : Vector<T>::Vector(numOfInputs), state(0){
         this->numOfInputs = numOfInputs;
         weights = this->pdata;
     }
@@ -471,7 +471,7 @@ Neuron<T>& Neuron<T>::operator=(const Vector<T>& vector) {
     if (this->len== vector.len) {
         for (unsigned i = 0; i < this->len; ++i)
         {
-            *this->pdata[i] = vector[i];
+            *weights[i] = vector[i];
         }
 
     }
@@ -492,13 +492,13 @@ Neuron<T>& Neuron<T>::operator=(const Vector<T>& vector) {
 
         for (unsigned i = 0; i < Vector<T>::len; ++i)
         {
-            *this->pdata[i] = vector[i];
-            //*weights[i] = vector[i];
+            *weights[i] = vector[i];
         }
     }
 
     return *this;
 }
+
 
 /*
 template<typename T>
@@ -522,18 +522,16 @@ Neuron<T>& Neuron<T>::operator()(const Neuron<T>& neuron) {
 }
 */
 
-/*
+
 template<typename T>
 class NeuralClaster: public Matrix<T> {
 public:
 
-    explicit NeuralClaster(const unsigned& numOfInputs, const unsigned& numOfNeurons): Matrix<T>::Matrix(), numOfInputs(numOfInputs), numOfNeurons(numOfNeurons) {
-       
-        claster = new Neuron<T> * [cols];
-        for (unsigned i = 0; i < cols; ++i) {
-            claster[i] = new Neuron<T>(rows);
-        }
-        //std::cout << "A new NeuralClaster has been created... " << this << std::endl;
+    explicit NeuralClaster(const unsigned& numOfInputs, const unsigned& numOfNeurons): 
+        Matrix<T>::Matrix(numOfInputs, numOfNeurons),
+        numOfInputs(numOfInputs), 
+        numOfNeurons(numOfNeurons) {
+        claster = this->matrix;
     }
 
     Neuron<T>& operator[](const unsigned& index) const {
@@ -545,7 +543,7 @@ private:
     unsigned numOfInputs;
     Neuron<T>** claster;
 };
-*/
+
 
 
 template<typename T>
@@ -555,8 +553,6 @@ class Layer {
 public:
     T bias;    // bias of each layer
     //using element_type = typename std::remove_reference< decltype(std::declval<T>) >::type;
-    //Neuron<T> outputs;
-    Vector<T> outputs;
 
     Activation transferFunction;
 
@@ -618,8 +614,10 @@ public:
 private:
     const unsigned cols;
     const unsigned rows;
-    Matrix<T> weights;
+    //Matrix<T> weights;
+    NeuralClaster<T> weights;
 
+    Vector<T> outputs;
     //NeuralClaster<T> neurons;
     
     Matrix<T> pre_deltas_weights;

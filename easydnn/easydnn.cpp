@@ -1,4 +1,4 @@
-//Under construction, it doesn't work yet
+//Under construction
 /*
 This code is devoted to my dear father Jesus Christ.
 Code by St. Spirit and Danijar Wolf, Feb 20, 2020.

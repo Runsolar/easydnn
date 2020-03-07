@@ -1,4 +1,4 @@
-//Under construction
+//Underconstruction
 /*
 This code is devoted to my dear father Jesus Christ.
 Code by St. Spirit and Danijar Wolf, Feb 20, 2020.
@@ -15,7 +15,7 @@ Code by St. Spirit and Danijar Wolf, Feb 20, 2020.
 template <typename T> struct DataSet;
 enum class Activation { SIGMOID, SOFTMAX, RELU, PLAIN };
 template<typename T> class Vector;
-template<typename T> class Matrix;
+template<class CSTYPE, typename T> class Matrix;
 template<typename T> class Neuron;
 template<typename T> class NeuralClaster;
 template<typename T> class Layer;
@@ -96,7 +96,8 @@ public:
     }
 
     const T dot(const Vector<T>& Vector) const;
-    const Vector<T> operator*(const Matrix<T>& matrix) const;
+    const Vector<T> operator*(const Matrix<Vector<T>, T>& matrix) const;
+    const Neuron<T> operator*(const Matrix<Neuron<T>, T>& matrix) const;
     const Vector<T> operator*(const Vector<T>& Vector) const;
     const Vector<T> operator*(const T& scalar) const;
     const Vector<T>& operator-=(const Vector<T>& Vector) const;
@@ -134,8 +135,17 @@ const Vector<T> Vector<T>::reluDerivativeFunc() const {
 }
 
 template<typename T>
-const Vector<T> Vector<T>::operator*(const Matrix<T>& matrix) const {
+const Vector<T> Vector<T>::operator*(const Matrix<Vector<T>, T>& matrix) const {
     Vector<T> vec(matrix.cols);
+    for (unsigned i = 0; i < matrix.cols; ++i) {
+        *vec.pdata[i] = dot(matrix[i]);
+    }
+    return vec;
+}
+
+template<typename T>
+const Neuron<T> Vector<T>::operator*(const Matrix<Neuron<T>, T>& matrix) const {
+    Neuron<T> vec(matrix.cols);
     for (unsigned i = 0; i < matrix.cols; ++i) {
         *vec.pdata[i] = dot(matrix[i]);
     }
@@ -235,27 +245,29 @@ Vector<T>& Vector<T>::operator()(const Vector<T>& vector) {
     return *this;
 }
 
-template<typename T>
+
+
+template<class CSTYPE, typename T>
 class Matrix {
     friend Vector<T>;
     friend Layer<T>;
     friend NeuralNetwork<Layer<T>, T>;
 
 public:
-    //Matrix() = delete;
-    Matrix(): rows(0), cols(0), matrix(nullptr) {}
+    Matrix() = delete;
+    //Matrix(): rows(0), cols(0), matrix(nullptr) {}
 
     explicit Matrix(const unsigned rows, const unsigned cols) : rows(rows), cols(cols) {
-        matrix = new Neuron<T> * [cols];
+        matrix = new CSTYPE * [cols];
         for (unsigned i = 0; i < cols; ++i) {
-            matrix[i] = new Neuron<T>(rows);
+            matrix[i] = new CSTYPE(rows);
         }
         //std::cout << "A new matrix has been created... " << this << std::endl;
     }
 
-    Matrix(const Matrix<T>& matrixObj) : Matrix(matrixObj.rows, matrixObj.cols) {
+    Matrix(const Matrix<CSTYPE, T>& matrixObj) : Matrix(matrixObj.rows, matrixObj.cols) {
         for (unsigned i = 0, j; i < cols; ++i) {
-            Neuron<T>& col = *matrix[i];
+            CSTYPE& col = *matrix[i];
             for (j = 0; j < rows; j++) {
                 col[j] = matrixObj[i][j];
             }
@@ -267,20 +279,20 @@ public:
             return Col[j];
         }
     */
-    Neuron<T>& operator[](const unsigned index) const {
+    CSTYPE& operator[](const unsigned index) const {
         return *matrix[index];
     }
 
-    const Matrix<T> operator*(const T& scalar) const;
-    const Vector<T> operator*(const Vector<T>& vec) const;
-    const Matrix<T> operator*(const Matrix<T>& m) const;
-    const Matrix<T>& operator-=(const Matrix<T>& m) const;
-    const Matrix<T> operator-(const Matrix<T>& m) const;
+    const Matrix<CSTYPE, T> operator*(const T& scalar) const;
+    const CSTYPE operator*(const Vector<T>& vec) const;
+    const Matrix<CSTYPE, T> operator*(const Matrix<Vector<T>, T>& m) const;
+    const Matrix<CSTYPE, T>& operator-=(const Matrix<Vector<T>, T>& m) const;
+    const Matrix<CSTYPE, T> operator-(const Matrix<Vector<T>, T>& m) const;
 
-    const Matrix<T>& operator=(const Matrix<T>& matrixObj) const {
+    const Matrix<CSTYPE, T>& operator=(const Matrix<Vector<T>, T>& matrixObj) const {
         if (cols == matrixObj.cols && rows == matrixObj.rows) {
             for (unsigned i = 0, j; i < cols; ++i) {
-                Neuron<T>& col = *matrix[i];
+                CSTYPE& col = *matrix[i];
                 for (j = 0; j < rows; j++) {
                     col[j] = matrixObj[i][j];
                 }
@@ -303,13 +315,13 @@ protected:
     unsigned cols;
     unsigned rows;
     //Vector<T>** matrix;
-    Neuron<T>** matrix;
+    CSTYPE** matrix;
 };
 
 
-template<typename T>
-const Matrix<T> Matrix<T>::operator*(const T& scalar) const {
-    Matrix<T> res(rows, cols);
+template<class CSTYPE, typename T>
+const Matrix<CSTYPE, T> Matrix<CSTYPE, T>::operator*(const T& scalar) const {
+    Matrix<CSTYPE, T> res(rows, cols);
 
     for (unsigned j = 0, i; j < rows; ++j) {
         for (i = 0; i < cols; ++i) {
@@ -319,9 +331,9 @@ const Matrix<T> Matrix<T>::operator*(const T& scalar) const {
     return res;
 }
 
-template<typename T>
-const Vector<T> Matrix<T>::operator*(const Vector<T>& vec) const {
-    Neuron<T> res(rows);
+template<class CSTYPE, typename T>
+const CSTYPE Matrix<CSTYPE, T>::operator*(const Vector<T>& vec) const {
+    CSTYPE res(rows);
 
     for (unsigned j = 0, i; j < rows; ++j) {
         res[j] = 0;
@@ -332,9 +344,9 @@ const Vector<T> Matrix<T>::operator*(const Vector<T>& vec) const {
     return res;
 }
 
-template<typename T>
-const Matrix<T> Matrix<T>::operator*(const Matrix<T>& m) const {
-    Matrix<T> res(rows, m.cols);
+template<class CSTYPE, typename T>
+const Matrix<CSTYPE, T> Matrix<CSTYPE, T>::operator*(const Matrix<Vector<T>, T>& m) const {
+    Matrix<CSTYPE, T> res(rows, m.cols);
 
     for (unsigned j = 0, i, k; j < rows; ++j) {
         for (i = 0; i < m.cols; ++i) {
@@ -347,8 +359,8 @@ const Matrix<T> Matrix<T>::operator*(const Matrix<T>& m) const {
     return res;
 }
 
-template<typename T>
-const Matrix<T>& Matrix<T>::operator-=(const Matrix<T>& m) const {
+template<class CSTYPE, typename T>
+const Matrix<CSTYPE, T>& Matrix<CSTYPE, T>::operator-=(const Matrix<Vector<T>, T>& m) const {
     for (unsigned j = 0, i; j < rows; ++j) {
         for (i = 0; i < cols; ++i) {
             (*matrix[i])[j] -= m[i][j];
@@ -357,9 +369,9 @@ const Matrix<T>& Matrix<T>::operator-=(const Matrix<T>& m) const {
     return *this;
 }
 
-template<typename T>
-const Matrix<T> Matrix<T>::operator-(const Matrix<T>& m) const {
-    Matrix<T> res(rows, cols);
+template<class CSTYPE, typename T>
+const Matrix<CSTYPE, T> Matrix<CSTYPE, T>::operator-(const Matrix<Vector<T>, T>& m) const {
+    Matrix<CSTYPE, T> res(rows, cols);
 
     res = *this;
     res -= m;
@@ -524,24 +536,24 @@ Neuron<T>& Neuron<T>::operator()(const Neuron<T>& neuron) {
 
 
 template<typename T>
-class NeuralClaster: public Matrix<T> {
+class NeuralClaster: public Matrix<Neuron<T>,T> {
 public:
 
     explicit NeuralClaster(const unsigned& numOfInputs, const unsigned& numOfNeurons): 
-        Matrix<T>::Matrix(numOfInputs, numOfNeurons),
+        Matrix<Neuron<double>, T>::Matrix(numOfInputs, numOfNeurons),
         numOfInputs(numOfInputs), 
         numOfNeurons(numOfNeurons) {
-        claster = this->matrix;
+        neurons = this->matrix;
     }
 
     Neuron<T>& operator[](const unsigned& index) const {
-        return *claster[index];
+        return *neurons[index];
     }
 
 private:
     unsigned numOfNeurons;
     unsigned numOfInputs;
-    Neuron<T>** claster;
+    Neuron<T>** neurons;
 };
 
 
@@ -561,13 +573,13 @@ public:
         rows(numsOfWeights),
         cols(numsOfPerceptrons),
         transferFunction(transferFunction),
-        weights(numsOfWeights, numsOfPerceptrons),
+        neurons(numsOfWeights, numsOfPerceptrons),
         outputs(numsOfPerceptrons),
         biases(numsOfPerceptrons),
         bias(static_cast<T>(1)) {  
 
         for (unsigned i = 0; i < cols; ++i) {
-            outputs.pdata[i] = &weights[i].state;
+            outputs.pdata[i] = &neurons[i].state;
         }
 
         std::default_random_engine generator;
@@ -578,7 +590,7 @@ public:
                 //weights[i][j] = static_cast<unsigned>(rand() % 2) ? static_cast<T>(rand()) / RAND_MAX : static_cast<T>(rand()) / -RAND_MAX;
                 //weights[i][j] = static_cast<T>(rand()) / RAND_MAX;
                 //pre_deltas_weights[i][j] = static_cast<T>(0);
-                weights[i][j] = distribution(generator);
+                neurons[i][j] = distribution(generator);
             }
         }
 
@@ -595,7 +607,7 @@ public:
     void PrunsignedLayer() const {
         for (unsigned j = 0, i; j < rows; ++j) {
             for (i = 0; i < cols; ++i) {
-                std::cout << static_cast<T>(weights[i][j]) << "   ";
+                std::cout << static_cast<T>(neurons[i][j]) << "   ";
             }
             std::cout << std::endl;
         }
@@ -615,12 +627,12 @@ private:
     const unsigned cols;
     const unsigned rows;
     //Matrix<T> weights;
-    NeuralClaster<T> weights;
+    NeuralClaster<T> neurons;
 
     Vector<T> outputs;
     //NeuralClaster<T> neurons;
     
-    Matrix<T> pre_deltas_weights;
+    //Matrix<T> pre_deltas_weights;
     Vector<T> biases;
 
     //const 
@@ -648,9 +660,9 @@ Vector<T> Layer<T>::BackPropagation(const Vector<T>& errors, const Vector<T>& in
         break;
     }
 
-    Matrix<T> in(input.len, 1);
-    Matrix<T> wdl(1, gamma.len);
-    //    Matrix<T> gradients(in.rows, wdl.cols);
+    Matrix<Vector<T>, T> in(input.len, 1);
+    Matrix<Vector<T>, T> wdl(1, gamma.len);
+    //    Matrix<Vector<T>, T> gradients(in.rows, wdl.cols);
 
     in[0] = input;
     for (unsigned i = 0; i < gamma.len; ++i) wdl[i][0] = gamma[i];
@@ -661,10 +673,10 @@ Vector<T> Layer<T>::BackPropagation(const Vector<T>& errors, const Vector<T>& in
     //bias -= bias_Delta * DEFAULT_BIASLEARNINGRATE;
     //bias -= bias_Delta * learning_rate;
 
-    gamma = weights * gamma; //calculating a pregamma for a next layer
+    gamma = neurons * gamma; //calculating a pregamma for a next layer
 
     //weights -= pre_deltas_weights*DEFAULT_MOMENTUM - in * wdl * -learning_rate*(1-DEFAULT_MOMENTUM);
-    weights -= in * wdl * learning_rate;
+    neurons -= in * wdl * learning_rate;
 
     //pre_deltas_weights = in * wdl * learning_rate;
     return gamma;
@@ -672,7 +684,7 @@ Vector<T> Layer<T>::BackPropagation(const Vector<T>& errors, const Vector<T>& in
 
 template<typename T>
 void Layer<T>::FeedForward(const Vector<T>& input) {
-    outputs = input * weights;
+    outputs = input * neurons;
     activation_mapper();
 }
 
@@ -906,9 +918,9 @@ const void NeuralNetwork<U, T>::predict(const Vector<T>& input) const {
 
 template <typename T>
 struct DataSet {
-    DataSet(const Matrix<T>& inputs, const Matrix<T>& labels) : inputs(inputs), labels(labels) {};
-    const Matrix<T>& inputs;
-    const Matrix<T>& labels;
+    DataSet(const Matrix<Vector<T>, T>& inputs, const Matrix<Vector<T>, T>& labels) : inputs(inputs), labels(labels) {};
+    const Matrix<Vector<T>, T>& inputs;
+    const Matrix<Vector<T>, T>& labels;
 };
 
 
@@ -994,7 +1006,7 @@ int main()
 
     srand(time(NULL));
 
-    const Matrix<double> inputs(8, 3);
+    const Matrix<Vector<double>, double> inputs(8, 3);
     inputs[0][0] = 0; inputs[1][0] = 0; inputs[2][0] = 0;
     inputs[0][1] = 0; inputs[1][1] = 0; inputs[2][1] = 1;
     inputs[0][2] = 0; inputs[1][2] = 1; inputs[2][2] = 0;
@@ -1005,7 +1017,7 @@ int main()
     inputs[0][7] = 1; inputs[1][7] = 1; inputs[2][7] = 1;
 
 
-    const Matrix<double> expectedLabels(1, 8);
+    const Matrix<Vector<double>, double> expectedLabels(1, 8);
     expectedLabels[0][0] = 0; expectedLabels[1][0] = 1; expectedLabels[2][0] = 1;  expectedLabels[3][0] = 0;
     expectedLabels[4][0] = 1; expectedLabels[5][0] = 0; expectedLabels[6][0] = 0;  expectedLabels[7][0] = 1;
 

@@ -33,9 +33,30 @@ const T Relu(const T& x)
     return (x < 0) ? static_cast<T>(0) : x;
 }
 
+template<typename T>
+class Array {
+public:
+    unsigned len;
+    explicit Array(const unsigned& len) : len(len), data(nullptr) {
+        try {
+            data = new T[len]();
+            //std::cout << "A new Vector hase been created... " << this << std::endl;
+        }
+        catch (std::exception & ex) {
+            std::cout << "En exception is happened... " << ex.what() << std::endl;
+            return;
+        }
+    }
+    ~Array() {
+        delete[] data;
+    }
+
+protected:
+    T* data;
+};
 
 template<typename T>
-class Vector {
+class Vector: public Array<T> {
     friend Layer<T>;
     //friend const Vector<T> operator-(const Vector<T>& x, const Vector<T>& y);
     //friend NeuralNetwork<Layer<T>, T>;
@@ -45,17 +66,7 @@ public:
     
     Vector() = delete;
     //Vector() : len(0), data(nullptr) {}
-    explicit Vector(const unsigned &len) : len(len), data(nullptr) {
-
-        try {
-            data = new T[len]();
-            //std::cout << "A new Vector hase been created... " << this << std::endl;
-        }
-        catch (std::exception & ex) {
-            std::cout << "En exception is happened... " << ex.what() << std::endl;
-            return;
-        }
-
+    explicit Vector(const unsigned &len) : Array<T>::Array(len), len(len) {
         try {
             pdata = new T*[len]();
         }
@@ -65,10 +76,9 @@ public:
         }
 
         for (unsigned i = 0; i < len; ++i) {
-            pdata[i] = &data[i];
+            pdata[i] = &(Array<T>::data[i]);
         }
     }
-
 
     Vector(const Vector<T>& vec) : Vector(vec.len) {
         if (this == &vec) return;
@@ -77,14 +87,9 @@ public:
         }
     }
 
-    virtual ~Vector() {
-        delete[] pdata;
-        delete[] data;
+    ~Vector() {
+        delete[] pdata;   
         //std::cout << "A Vector hase been deleted... " << this << std::endl;
-    }
-
-    const unsigned getLen() const {
-        return len;
     }
 
     T& operator[](const unsigned index) {
@@ -104,10 +109,9 @@ public:
     const Vector<T> operator-(const Vector<T>& Vector) const;
 
     Vector<T>& operator=(const Vector<T>& Vector);
-    Vector<T>& operator()(const Vector<T>& Vector);
+    //Vector<T>& operator()(const Vector<T>& Vector);
 
 protected:
-    T* data;
     T** pdata;
     const Vector<T> reluDerivativeFunc() const;
 };
@@ -143,14 +147,16 @@ const Vector<T> Vector<T>::operator*(const Matrix<Vector<T>, T>& matrix) const {
     return vec;
 }
 
+
 template<typename T>
 const Neuron<T> Vector<T>::operator*(const Matrix<Neuron<T>, T>& matrix) const {
     Neuron<T> vec(matrix.cols);
     for (unsigned i = 0; i < matrix.cols; ++i) {
-        *vec.pdata[i] = dot(matrix[i]);
+        *vec.pdata[i] = this->dot(matrix[i]);
     }
     return vec;
 }
+
 
 template<typename T>
 const Vector<T> Vector<T>::operator*(const Vector<T>& vector) const {
@@ -200,27 +206,31 @@ Vector<T>& Vector<T>::operator=(const Vector<T>& vector) {
         }
     }
     else {
-        len = vector.len;
-        
+
         if (pdata != nullptr) {
             delete[] pdata;
         }
-        if (data != nullptr) {
-            delete[] data;
+
+        if (Array<T>::data != nullptr) {
+            Array<T>::~Array();
         }
 
-        data = new T[len]();
+        len = vector.len;
+        Array<T>::len = len;
+        Array<T>::data = new T[len]();
         pdata = new T * [len]();
 
         for (unsigned i = 0; i < len; ++i) {
             //data[i] = vector[i];
-            pdata[i] = &data[i];
+            pdata[i] = &(Array<T>::data[i]);
             *pdata[i] = *vector.pdata[i];
         }
+        
     }
     return *this;
 }
 
+/*
 template<typename T>
 Vector<T>& Vector<T>::operator()(const Vector<T>& vector) {
 
@@ -244,12 +254,13 @@ Vector<T>& Vector<T>::operator()(const Vector<T>& vector) {
 
     return *this;
 }
-
+*/
 
 
 template<class CSTYPE, typename T>
 class Matrix {
     friend Vector<T>;
+    friend Neuron<T>;
     friend Layer<T>;
     friend NeuralNetwork<Layer<T>, T>;
 
@@ -406,7 +417,7 @@ Matrix<T>& Matrix<T>::operator()(const Matrix<T>& matrixObj) {
 */
 
 template<typename T>
-class Neuron : virtual public Vector<T> {
+class Neuron : public Vector<T> {
 public:
     unsigned numOfInputs = 0;
     T state;
@@ -511,7 +522,6 @@ Neuron<T>& Neuron<T>::operator=(const Vector<T>& vector) {
     return *this;
 }
 
-
 /*
 template<typename T>
 Neuron<T>& Neuron<T>::operator()(const Neuron<T>& neuron) {
@@ -535,6 +545,7 @@ Neuron<T>& Neuron<T>::operator()(const Neuron<T>& neuron) {
 */
 
 
+
 template<typename T>
 class NeuralClaster: public Matrix<Neuron<T>,T> {
 public:
@@ -543,17 +554,17 @@ public:
         Matrix<Neuron<double>, T>::Matrix(numOfInputs, numOfNeurons),
         numOfInputs(numOfInputs), 
         numOfNeurons(numOfNeurons) {
-        neurons = this->matrix;
+        weights = this->matrix;
     }
 
     Neuron<T>& operator[](const unsigned& index) const {
-        return *neurons[index];
+        return *weights[index];
     }
 
 private:
     unsigned numOfNeurons;
     unsigned numOfInputs;
-    Neuron<T>** neurons;
+    Neuron<T>** weights;
 };
 
 
@@ -563,7 +574,6 @@ class Layer {
     friend NeuralNetwork<Layer<T>, T>;
 
 public:
-    T bias;    // bias of each layer
     //using element_type = typename std::remove_reference< decltype(std::declval<T>) >::type;
 
     Activation transferFunction;
@@ -575,8 +585,7 @@ public:
         transferFunction(transferFunction),
         neurons(numsOfWeights, numsOfPerceptrons),
         outputs(numsOfPerceptrons),
-        biases(numsOfPerceptrons),
-        bias(static_cast<T>(1)) {  
+        biase(numsOfPerceptrons) {  
 
         for (unsigned i = 0; i < cols; ++i) {
             outputs.pdata[i] = &neurons[i].state;
@@ -587,7 +596,7 @@ public:
 
         for (unsigned i = 0, j; i < cols; ++i) {
             for (j = 0; j < rows; ++j) {
-                //weights[i][j] = static_cast<unsigned>(rand() % 2) ? static_cast<T>(rand()) / RAND_MAX : static_cast<T>(rand()) / -RAND_MAX;
+                //neurons[i][j] = static_cast<unsigned>(rand() % 2) ? static_cast<T>(rand()) / RAND_MAX : static_cast<T>(rand()) / -RAND_MAX;
                 //weights[i][j] = static_cast<T>(rand()) / RAND_MAX;
                 //pre_deltas_weights[i][j] = static_cast<T>(0);
                 neurons[i][j] = distribution(generator);
@@ -595,8 +604,8 @@ public:
         }
 
         for (unsigned i = 0; i < cols; ++i) {
-            biases[i] = static_cast<unsigned>(rand() % 2) ? static_cast<T>(rand()) / RAND_MAX : static_cast<T>(rand()) / -RAND_MAX;
-            //biases[i] = static_cast<T>(rand()) / RAND_MAX;
+            //biase[i] = static_cast<unsigned>(rand() % 2) ? static_cast<T>(rand()) / RAND_MAX : static_cast<T>(rand()) / -RAND_MAX;
+            biase[i] = distribution(generator);
         }
 
     }
@@ -628,24 +637,20 @@ private:
     const unsigned rows;
     //Matrix<T> weights;
     NeuralClaster<T> neurons;
+    Vector<T> biase;
 
     Vector<T> outputs;
     //NeuralClaster<T> neurons;
     
     //Matrix<T> pre_deltas_weights;
-    Vector<T> biases;
-
     //const 
     void activation_mapper();
 };
 
 template<typename T>
 Vector<T> Layer<T>::BackPropagation(const Vector<T>& errors, const Vector<T>& input, const T& learning_rate) {
-    T bias_Delta = 0;
-    //Vector<T> derOfSigmoid(outputs.len);
     Vector<T> gamma(outputs.len);
 
-    //derOfSigmoid = outputs - outputs*outputs;
     switch (transferFunction) {
     case Activation::SIGMOID:
         gamma = errors * (outputs - outputs * outputs);
@@ -666,12 +671,10 @@ Vector<T> Layer<T>::BackPropagation(const Vector<T>& errors, const Vector<T>& in
 
     in[0] = input;
     for (unsigned i = 0; i < gamma.len; ++i) wdl[i][0] = gamma[i];
+
     for (unsigned i = 0; i < gamma.len; ++i) {
-        //bias_Delta *= gamma[i];
-        biases[i] -= gamma[i] * learning_rate;
+        biase[i] -= gamma[i] * DEFAULT_BIASLEARNINGRATE;
     }
-    //bias -= bias_Delta * DEFAULT_BIASLEARNINGRATE;
-    //bias -= bias_Delta * learning_rate;
 
     gamma = neurons * gamma; //calculating a pregamma for a next layer
 
@@ -694,15 +697,15 @@ void Layer<T>::activation_mapper() {
 
         switch (transferFunction) {
         case Activation::SIGMOID:
-            outputs[i] = Sigmoid(outputs[i] + biases[i]);
+            outputs[i] = Sigmoid(outputs[i] + biase[i]);
             break;
         case Activation::SOFTMAX:
             break;
         case Activation::RELU:
-            outputs[i] = Relu(outputs[i] + biases[i]);
+            outputs[i] = Relu(outputs[i] + biase[i]);
             break;
         case Activation::PLAIN:
-            outputs[i] = outputs[i] + biases[i];
+            outputs[i] = outputs[i] + biase[i];
             break;
         }
 

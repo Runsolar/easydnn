@@ -10,7 +10,7 @@ Code by St. Spirit and Danijar Wolf, Feb 20, 2020.
 
 #define DEFAULT_LEARNINGRATE 0.15
 #define DEFAULT_BIASLEARNINGRATE 0.05
-#define DEFAULT_MOMENTUM 0.2
+#define DEFAULT_MOMENTUM 0.25
 
 template <typename T> struct DataSet;
 enum class Activation { SIGMOID, SOFTMAX, RELU, PLAIN };
@@ -584,6 +584,7 @@ public:
         cols(numsOfPerceptrons),
         transferFunction(transferFunction),
         neurons(numsOfWeights, numsOfPerceptrons),
+        pre_deltas_weights(numsOfWeights, numsOfPerceptrons),
         outputs(numsOfPerceptrons),
         biase(numsOfPerceptrons) {  
 
@@ -598,7 +599,7 @@ public:
             for (j = 0; j < rows; ++j) {
                 //neurons[i][j] = static_cast<unsigned>(rand() % 2) ? static_cast<T>(rand()) / RAND_MAX : static_cast<T>(rand()) / -RAND_MAX;
                 //weights[i][j] = static_cast<T>(rand()) / RAND_MAX;
-                //pre_deltas_weights[i][j] = static_cast<T>(0);
+                pre_deltas_weights[i][j] = static_cast<T>(0);
                 neurons[i][j] = distribution(generator);
             }
         }
@@ -635,14 +636,12 @@ public:
 private:
     const unsigned cols;
     const unsigned rows;
-    //Matrix<T> weights;
     NeuralClaster<T> neurons;
     Vector<T> biase;
 
     Vector<T> outputs;
-    //NeuralClaster<T> neurons;
     
-    //Matrix<T> pre_deltas_weights;
+    Matrix<Vector<T>, T> pre_deltas_weights;
     //const 
     void activation_mapper();
 };
@@ -667,21 +666,21 @@ Vector<T> Layer<T>::BackPropagation(const Vector<T>& errors, const Vector<T>& in
 
     Matrix<Vector<T>, T> in(input.len, 1);
     Matrix<Vector<T>, T> wdl(1, gamma.len);
-    //    Matrix<Vector<T>, T> gradients(in.rows, wdl.cols);
+    Matrix<Vector<T>, T> gradient(in.rows, wdl.cols);
 
     in[0] = input;
     for (unsigned i = 0; i < gamma.len; ++i) wdl[i][0] = gamma[i];
 
     for (unsigned i = 0; i < gamma.len; ++i) {
-        biase[i] -= gamma[i] * DEFAULT_BIASLEARNINGRATE;
+        biase[i] -= gamma[i] * learning_rate;
     }
 
     gamma = neurons * gamma; //calculating a pregamma for a next layer
+    gradient = in * wdl;
+    //neurons -= pre_deltas_weights*DEFAULT_MOMENTUM - gradient * -learning_rate*(1-DEFAULT_MOMENTUM);
+    neurons -= gradient * learning_rate;
+    //pre_deltas_weights = gradient * learning_rate;
 
-    //weights -= pre_deltas_weights*DEFAULT_MOMENTUM - in * wdl * -learning_rate*(1-DEFAULT_MOMENTUM);
-    neurons -= in * wdl * learning_rate;
-
-    //pre_deltas_weights = in * wdl * learning_rate;
     return gamma;
 }
 

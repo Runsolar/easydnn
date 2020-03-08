@@ -7,13 +7,16 @@ Code by St. Spirit and Danijar Wolf, Feb 20, 2020.
 #include <iostream>
 #include<ctime>
 #include <random>
+#include <ppl.h>
 
 #define DEFAULT_LEARNINGRATE 0.15
 #define DEFAULT_BIASLEARNINGRATE 0.05
 #define DEFAULT_MOMENTUM 0.25
 
+//using namespace Concurrency;
+
 template <typename T> struct DataSet;
-enum class Activation { SIGMOID, SOFTMAX, RELU, PLAIN };
+enum class Activation { SIGMOID, SOFTMAX, RELU };
 template<typename T> class Vector;
 template<class CSTYPE, typename T> class Matrix;
 template<typename T> class Neuron;
@@ -144,6 +147,11 @@ const Vector<T> Vector<T>::operator*(const Matrix<Vector<T>, T>& matrix) const {
     for (unsigned i = 0; i < matrix.cols; ++i) {
         *vec.pdata[i] = dot(matrix[i]);
     }
+/*
+    parallel_for(0, matrix.cols, [](int i) {
+        *vec.pdata[i] = dot(matrix[i]);
+    });
+*/
     return vec;
 }
 
@@ -264,6 +272,9 @@ class Matrix {
     friend Layer<T>;
     friend NeuralNetwork<Layer<T>, T>;
 
+    template <typename _Index_type, typename _Function>
+    friend void Concurrency::parallel_for(_Index_type, _Index_type, _Index_type, const _Function&);
+
 public:
     Matrix() = delete;
     //Matrix(): rows(0), cols(0), matrix(nullptr) {}
@@ -352,6 +363,17 @@ const CSTYPE Matrix<CSTYPE, T>::operator*(const Vector<T>& vec) const {
             res[j] += (*matrix[i])[j] * vec[i];
         }
     }
+
+/*
+    int r = rows;
+    int c = cols;
+    Concurrency::parallel_for(0, r, 1, [&](int j) {
+        res[j] = 0;
+        for (int i = 0; i < c; ++i) {
+            res[j] += (*matrix[i])[j] * vec[i];
+        }
+    });
+ */  
     return res;
 }
 
@@ -363,10 +385,25 @@ const Matrix<CSTYPE, T> Matrix<CSTYPE, T>::operator*(const Matrix<Vector<T>, T>&
         for (i = 0; i < m.cols; ++i) {
             res[i][j] = 0;
             for (k = 0; k < cols; ++k) {
-                res[i][j] = res[i][j] + (*matrix[k])[j] * m[i][k];
+                res[i][j] += (*matrix[k])[j] * m[i][k];
             }
         }
     }
+
+/*
+    int r = rows;
+    int c = cols;
+    int mc = m.cols;
+    
+    Concurrency::parallel_for(0, r, 1, [&](int j) {
+        for (int i = 0; i < mc; ++i) {
+            res[i][j] = 0;
+            for (int k = 0; k < c; ++k) {
+                res[i][j] += (*matrix[k])[j] * m[i][k];
+            }
+        }
+    });
+*/
     return res;
 }
 

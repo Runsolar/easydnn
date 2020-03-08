@@ -659,7 +659,7 @@ Vector<T> Layer<T>::BackPropagation(const Vector<T>& errors, const Vector<T>& in
     case Activation::RELU:
         gamma = errors * outputs.reluDerivativeFunc();
         break;
-    case Activation::PLAIN:
+    default:
         gamma = errors * outputs;
         break;
     }
@@ -703,7 +703,7 @@ void Layer<T>::activation_mapper() {
         case Activation::RELU:
             outputs[i] = Relu(outputs[i] + biase[i]);
             break;
-        case Activation::PLAIN:
+        default:
             outputs[i] = outputs[i] + biase[i];
             break;
         }

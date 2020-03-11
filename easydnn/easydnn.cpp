@@ -20,7 +20,7 @@ enum class Activation { SIGMOID, SOFTMAX, RELU };
 template<typename T> class Vector;
 template<class CSTYPE, typename T> class Matrix;
 template<typename T> class Neuron;
-template<typename T> class NeuralClaster;
+template<typename T> class NeuralCluster;
 template<typename T> class Layer;
 template<class U, typename T> class NeuralNetwork;
 
@@ -584,10 +584,10 @@ Neuron<T>& Neuron<T>::operator()(const Neuron<T>& neuron) {
 
 
 template<typename T>
-class NeuralClaster: public Matrix<Neuron<T>,T> {
+class NeuralCluster: public Matrix<Neuron<T>,T> {
 public:
 
-    explicit NeuralClaster(const unsigned& numOfInputs, const unsigned& numOfNeurons): 
+    explicit NeuralCluster(const unsigned& numOfInputs, const unsigned& numOfNeurons): 
         Matrix<Neuron<double>, T>::Matrix(numOfInputs, numOfNeurons),
         numOfInputs(numOfInputs), 
         numOfNeurons(numOfNeurons) {
@@ -673,7 +673,7 @@ public:
 private:
     const unsigned cols;
     const unsigned rows;
-    NeuralClaster<T> neurons;
+    NeuralCluster<T> neurons;
     Vector<T> biase;
 
     Vector<T> outputs;

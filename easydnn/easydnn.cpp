@@ -22,7 +22,7 @@ template<class CSTYPE, typename T> class Matrix;
 template<typename T> class Neuron;
 template<typename T> class NeuralCluster;
 template<typename T> class Layer;
-template<class U, typename T> class NeuralNetwork;
+template<typename T> class NeuralNetwork;
 
 template<typename T>
 const T Sigmoid(const T& x)
@@ -270,7 +270,7 @@ class Matrix {
     friend Vector<T>;
     friend Neuron<T>;
     friend Layer<T>;
-    friend NeuralNetwork<Layer<T>, T>;
+    friend NeuralNetwork<T>;
 
     template <typename _Index_type, typename _Function>
     friend void Concurrency::parallel_for(_Index_type, _Index_type, _Index_type, const _Function&);
@@ -608,7 +608,7 @@ private:
 
 template<typename T>
 class Layer {
-    friend NeuralNetwork<Layer<T>, T>;
+    friend NeuralNetwork<T>;
 
 public:
     //using element_type = typename std::remove_reference< decltype(std::declval<T>) >::type;
@@ -749,14 +749,14 @@ void Layer<T>::activation_mapper() {
 }
 
 
-template<class U, typename T>
+template<typename T>
 class NeuralNetwork {
 public:
     T learning_rate;
     mutable T m_error;
     Vector<T> result;
 
-    using element_type = typename std::remove_reference< decltype(std::declval<U>()) >::type;
+    //using element_type = typename std::remove_reference< decltype(std::declval<Layer<T>>()) >::type;
 
     explicit NeuralNetwork() : head(nullptr), tail(nullptr), learning_rate(DEFAULT_LEARNINGRATE) {
         std::cout << "The NeuralNetwork has been created" << this << std::endl;
@@ -772,7 +772,7 @@ public:
 
     ~NeuralNetwork();
 
-    void pushLayer(U& layerObj);
+    void pushLayer(Layer<T>& layerObj);
     void mountDataSet(const DataSet<T>& dataset);
     void Train(const unsigned epochs) const;
 
@@ -782,27 +782,26 @@ private:
     void getResult() const;
     const void predict(const Vector<T>& input) const;
 
-    template<class U>
     class Domain {
     public:
-        U& layer;
-        Domain<U>* pNextDomain;
-        Domain<U>* pPreviousDomain;
-        Domain(U& layer = U(), Domain<U>* pPreviousDomain = nullptr, Domain<U>* pNextDomain = nullptr) :
+        Layer<T>& layer;
+        Domain* pNextDomain;
+        Domain* pPreviousDomain;
+        Domain(Layer<T>& layer = Layer<T>(), Domain* pPreviousDomain = nullptr, Domain* pNextDomain = nullptr) :
             layer(layer),
             pNextDomain(pNextDomain),
             pPreviousDomain(pPreviousDomain) {}
     };
-    Domain<U>* head;
-    Domain<U>* tail;
+    Domain* head;
+    Domain* tail;
     const DataSet<T>* pDataSet;
 };
 
-template<class U, typename T>
-NeuralNetwork<U, T>::~NeuralNetwork() {
+template<typename T>
+NeuralNetwork<T>::~NeuralNetwork() {
     if (head != nullptr) {
         while (head != nullptr) {
-            Domain<U>* current = head;
+            Domain* current = head;
             head = current->pNextDomain;
             delete current;
             std::cout << "A Domain has been deleted... " << this << std::endl;
@@ -811,31 +810,31 @@ NeuralNetwork<U, T>::~NeuralNetwork() {
     }
 }
 
-template<class U, typename T>
-void NeuralNetwork<U, T>::pushLayer(U& layerObj) {
+template<typename T>
+void NeuralNetwork<T>::pushLayer(Layer<T>& layerObj) {
     if (head == nullptr) {
-        head = new Domain<U>(layerObj);
+        head = new Domain(layerObj);
         std::cout << "A Domain has been created..." << this << std::endl;
         return;
     }
 
-    Domain<U>* current = head;
+    Domain* current = head;
     while (current->pNextDomain != nullptr) {
         current = current->pNextDomain;
     }
-    current->pNextDomain = new Domain<U>(layerObj, current);
+    current->pNextDomain = new Domain(layerObj, current);
     tail = current->pNextDomain;
 
     std::cout << "A Domain has been created..." << this << std::endl;
     return;
 }
 
-template<class U, typename T>
-void NeuralNetwork<U, T>::BackPropagation(const Vector<T>& input, const Vector<T>& label) const {
-    Domain<U>* current = tail;
+template<typename T>
+void NeuralNetwork<T>::BackPropagation(const Vector<T>& input, const Vector<T>& label) const {
+    Domain* current = tail;
     Vector<T> errors(label);
     const Vector<T>* pInput;
-    U* pLayer;
+    Layer<T>* pLayer;
     //U* pPreviousLayer;
 
     pLayer = &current->layer;
@@ -862,13 +861,13 @@ void NeuralNetwork<U, T>::BackPropagation(const Vector<T>& input, const Vector<T
     }
 };
 
-template<class U, typename T>
-void NeuralNetwork<U, T>::FeedForward(const Vector<T>& input) const {
-    Domain<U>* current = head;
+template<typename T>
+void NeuralNetwork<T>::FeedForward(const Vector<T>& input) const {
+    Domain* current = head;
     const Vector<T>* pInput;
     pInput = &input;
 
-    U* pLayer;
+    Layer<T>* pLayer;
     while (current != nullptr) {
         pLayer = &current->layer;
         pLayer->FeedForward(*pInput);
@@ -877,15 +876,15 @@ void NeuralNetwork<U, T>::FeedForward(const Vector<T>& input) const {
     }
 }
 
-template<class U, typename T>
-void NeuralNetwork<U, T>::mountDataSet(const DataSet<T>& dataset) {
+template<typename T>
+void NeuralNetwork<T>::mountDataSet(const DataSet<T>& dataset) {
     pDataSet = &dataset;
 };
 
-template<class U, typename T>
-void NeuralNetwork<U, T>::Train(const unsigned epochs) const {
-    Domain<U>* current = tail;
-    U* pLayer = &current->layer;
+template<typename T>
+void NeuralNetwork<T>::Train(const unsigned epochs) const {
+    Domain* current = tail;
+    Layer<T>* pLayer = &current->layer;
 
     T r;
     T delta_err;
@@ -943,14 +942,14 @@ void NeuralNetwork<U, T>::Train(const unsigned epochs) const {
     }
 };
 
-template <typename U, typename T>
-void NeuralNetwork<U, T>::getResult() const {
-    U* pLayer = tail;
+template <typename T>
+void NeuralNetwork<T>::getResult() const {
+    Layer<T>* pLayer = tail;
     result = pLayer->outputs;
 }
 
-template <typename U, typename T>
-const void NeuralNetwork<U, T>::predict(const Vector<T>& input) const {
+template <typename T>
+const void NeuralNetwork<T>::predict(const Vector<T>& input) const {
     FeedForward(input);
 }
 
@@ -1065,7 +1064,7 @@ int main()
     Layer<double> layer3(9, 9, Activation::SIGMOID);
     Layer<double> layer4(9, 1, Activation::SIGMOID);
 
-    NeuralNetwork<Layer<double>, double> NeuralNetwork(0.25);
+    NeuralNetwork<double> NeuralNetwork(0.25);
     NeuralNetwork.pushLayer(layer1);
     NeuralNetwork.pushLayer(layer2);
     NeuralNetwork.pushLayer(layer3);
